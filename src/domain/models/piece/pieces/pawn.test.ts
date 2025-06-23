@@ -4,6 +4,7 @@ import { Pawn } from './pawn';
 import { Board } from '../../board/board';
 import { Player, PieceType } from '../types';
 import { Position } from '../types';
+import { createPiece } from '../factory';
 
 describe('Pawn', () => {
   let board: Board;
@@ -35,8 +36,7 @@ describe('Pawn', () => {
         const pawn = new Pawn(Player.SENTE, { row: 6, column: 4 }); // 5七歩
         board.setPiece({ row: 6, column: 4 }, pawn);
 
-        const moves = pawn.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = pawn.getValidMoves(board);
 
         expect(destinations).toContainEqual({ row: 5, column: 4 }); // 5六へ
         expect(destinations).toHaveLength(1);
@@ -62,8 +62,7 @@ describe('Pawn', () => {
         const pawn = new Pawn(Player.GOTE, { row: 2, column: 4 }); // 5三歩
         board.setPiece({ row: 2, column: 4 }, pawn);
 
-        const moves = pawn.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = pawn.getValidMoves(board);
 
         expect(destinations).toContainEqual({ row: 3, column: 4 }); // 5四へ
         expect(destinations).toHaveLength(1);
@@ -85,8 +84,7 @@ describe('Pawn', () => {
       board.setPiece({ row: 6, column: 4 }, pawn);
       board.setPiece({ row: 5, column: 4 }, enemyPiece);
 
-      const moves = pawn.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = pawn.getValidMoves(board);
 
       expect(destinations).toContainEqual({ row: 5, column: 4 });
       expect(destinations).toHaveLength(1);
@@ -113,9 +111,9 @@ describe('Pawn', () => {
 
   describe('canPromote', () => {
     it('先手の場合、敵陣に入る時に成れる', () => {
-      const pawn = new Pawn(Player.SENTE, { row: 4, column: 5 });
+      const pawn = new Pawn(Player.SENTE, { row: 3, column: 5 });
       
-      expect(pawn.canPromote({ row: 3, column: 5 })).toBe(true);
+      expect(pawn.canPromote({ row: 2, column: 5 })).toBe(true);
     });
 
     it('先手の場合、2段目から1段目への移動時は強制的に成る必要がある', () => {
@@ -142,7 +140,7 @@ describe('Pawn', () => {
   describe('promote', () => {
     it('歩をと金に変換できる', () => {
       const pawn = new Pawn(Player.SENTE, { row: 5, column: 5 });
-      const tokin = pawn.promote();
+      const tokin = pawn.promote(createPiece);
       
       expect(tokin.type).toBe(PieceType.TOKIN);
       expect(tokin.player).toBe(Player.SENTE);

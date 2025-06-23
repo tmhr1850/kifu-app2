@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { King } from './king';
 import { Board } from '../../board/board';
 import { Player, PieceType } from '../types';
+import { createPiece } from '../factory';
 
 describe('King', () => {
   let board: Board;
@@ -22,8 +23,7 @@ describe('King', () => {
       const king = new King(Player.SENTE, { row: 4, column: 4 });
       board.setPiece({ row: 4, column: 4 }, king);
 
-      const moves = king.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = king.getValidMoves(board);
 
       expect(destinations).toHaveLength(8);
       expect(destinations).toContainEqual({ row: 3, column: 3 });
@@ -40,8 +40,7 @@ describe('King', () => {
       const king = new King(Player.SENTE, { row: 0, column: 0 });
       board.setPiece({ row: 0, column: 0 }, king);
 
-      const moves = king.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = king.getValidMoves(board);
 
       expect(destinations).toHaveLength(3);
       expect(destinations).toContainEqual({ row: 0, column: 1 });
@@ -56,7 +55,7 @@ describe('King', () => {
       board.setPiece({ row: 3, column: 4 }, ally);
 
       const moves = king.getValidMoves(board);
-      expect(moves.map(m => m.to)).not.toContainEqual({ row: 3, column: 4 });
+      expect(moves).not.toContainEqual({ row: 3, column: 4 });
       expect(moves).toHaveLength(7);
     });
 
@@ -77,7 +76,7 @@ describe('King', () => {
   describe('promote', () => {
     it('玉は成り駒に変換できない', () => {
       const king = new King(Player.SENTE, { row: 4, column: 4 });
-      expect(() => king.promote()).toThrow('この駒は成ることができません');
+      expect(() => king.promote(createPiece)).toThrow('この駒は成ることができません');
     });
   });
 });

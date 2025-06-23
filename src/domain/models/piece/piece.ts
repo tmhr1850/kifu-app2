@@ -1,5 +1,5 @@
 import { IPiece, IBoard } from './interface';
-import { PieceType, Player, Position, Move } from './types';
+import { PieceType, Player, Position } from './types';
 
 /**
  * 駒の基底クラス
@@ -16,13 +16,11 @@ export abstract class Piece implements IPiece {
   }
 
   /**
-   * 移動可能な位置を計算（基底クラスでは空配列）
-   * @param _board 現在の盤面状態
+   * 移動可能な位置を計算（各駒クラスで実装）
+   * @param board 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(_board: IBoard): Move[] {
-    return [];
-  }
+  abstract getValidMoves(board: IBoard): Position[];
 
   /**
    * 成り駒への変換が可能かチェック
@@ -45,20 +43,27 @@ export abstract class Piece implements IPiece {
       return false;
     }
 
-    // 先手の場合：敵陣は1-3段目
+    // 先手の場合：敵陣は0-2段目
     if (this.player === Player.SENTE) {
-      return to.row <= 3 || this.position.row <= 3;
+      return to.row <= 2 || this.position.row <= 2;
     }
     
-    // 後手の場合：敵陣は7-9段目
-    return to.row >= 7 || this.position.row >= 7;
+    // 後手の場合：敵陣は6-8段目
+    return to.row >= 6 || this.position.row >= 6;
   }
 
   /**
    * 成り駒に変換
+   * @param createPiece 駒を生成するファクトリ関数
    * @returns 成り駒のインスタンス
    */
-  promote(): IPiece {
+  promote(
+    createPiece: (
+      type: PieceType,
+      player: Player,
+      position: Position | null,
+    ) => IPiece,
+  ): IPiece {
     const promotionMap: Partial<Record<PieceType, PieceType>> = {
       [PieceType.ROOK]: PieceType.DRAGON,
       [PieceType.BISHOP]: PieceType.HORSE,
@@ -73,7 +78,7 @@ export abstract class Piece implements IPiece {
       throw new Error('この駒は成ることができません');
     }
 
-    return new Piece(promotedType, this.player, this.position);
+    return createPiece(promotedType, this.player, this.position);
   }
 
   /**

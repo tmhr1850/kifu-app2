@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Gold } from './gold';
 import { Board } from '../../board/board';
 import { Player, PieceType } from '../types';
+import { createPiece } from '../factory';
 
 describe('Gold', () => {
   let board: Board;
@@ -23,8 +24,7 @@ describe('Gold', () => {
         const gold = new Gold(Player.SENTE, { row: 4, column: 4 });
         board.setPiece({ row: 4, column: 4 }, gold);
 
-        const moves = gold.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = gold.getValidMoves(board);
 
         expect(destinations).toHaveLength(6);
         expect(destinations).toContainEqual({ row: 3, column: 3 }); // 左上
@@ -41,8 +41,7 @@ describe('Gold', () => {
         const gold = new Gold(Player.GOTE, { row: 4, column: 4 });
         board.setPiece({ row: 4, column: 4 }, gold);
 
-        const moves = gold.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = gold.getValidMoves(board);
 
         expect(destinations).toHaveLength(6);
         expect(destinations).toContainEqual({ row: 5, column: 3 });
@@ -59,8 +58,8 @@ describe('Gold', () => {
       board.setPiece({ row: 0, column: 0 }, gold);
       const moves = gold.getValidMoves(board);
       expect(moves).toHaveLength(2);
-      expect(moves.map(m => m.to)).toContainEqual({ row: 0, column: 1 });
-      expect(moves.map(m => m.to)).toContainEqual({ row: 1, column: 0 });
+      expect(moves).toContainEqual({ row: 0, column: 1 });
+      expect(moves).toContainEqual({ row: 1, column: 0 });
     });
 
     it('味方の駒がある場所には移動できない', () => {
@@ -70,7 +69,7 @@ describe('Gold', () => {
       board.setPiece({ row: 3, column: 4 }, ally);
 
       const moves = gold.getValidMoves(board);
-      expect(moves.map(m => m.to)).not.toContainEqual({ row: 3, column: 4 });
+      expect(moves).not.toContainEqual({ row: 3, column: 4 });
       expect(moves).toHaveLength(5);
     });
 
@@ -91,7 +90,7 @@ describe('Gold', () => {
   describe('promote', () => {
     it('金は成り駒に変換できない', () => {
       const gold = new Gold(Player.SENTE, { row: 4, column: 4 });
-      expect(() => gold.promote()).toThrow('この駒は成ることができません');
+      expect(() => gold.promote(createPiece)).toThrow('この駒は成ることができません');
     });
   });
 });

@@ -4,6 +4,7 @@ import { Horse } from './horse';
 import { Pawn } from './pawn';
 import { Board } from '../../board/board';
 import { Player, PieceType, Position } from '../types';
+import { createPiece } from '../factory';
 
 describe('Horse', () => {
   let board: Board;
@@ -29,11 +30,11 @@ describe('Horse', () => {
 
   describe('getValidMoves', () => {
     it('角の動き（斜め）に加えて、縦横1マスに移動できる', () => {
+      const board = new Board();
       const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
       board.setPiece({ row: 4, column: 4 }, horse);
 
-      const moves = horse.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = horse.getValidMoves(board);
 
       // 角の動き
       expect(destinations).toContainEqual({ row: 3, column: 3 });
@@ -53,34 +54,35 @@ describe('Horse', () => {
     });
 
     it('斜めの移動は他の駒を飛び越えることができない', () => {
+      const board = new Board();
       const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
       const blockingPiece = new Pawn(Player.GOTE, { row: 2, column: 2 });
       board.setPiece({ row: 4, column: 4 }, horse);
       board.setPiece({ row: 2, column: 2 }, blockingPiece);
 
-      const moves = horse.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = horse.getValidMoves(board);
 
       expect(destinations).toContainEqual({ row: 2, column: 2 }); // 敵の駒は取れる
       expect(destinations).not.toContainEqual({ row: 1, column: 1 }); // 飛び越えられない
     });
 
     it('縦横1マスの移動でも味方の駒がある場所には移動できない', () => {
+      const board = new Board();
       const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
       const allyPiece = new Pawn(Player.SENTE, { row: 3, column: 4 });
       board.setPiece({ row: 4, column: 4 }, horse);
       board.setPiece({ row: 3, column: 4 }, allyPiece);
 
-      const moves = horse.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = horse.getValidMoves(board);
 
       expect(destinations).not.toContainEqual({ row: 3, column: 4 });
     });
 
     it('持ち駒の場合は移動できない', () => {
+      const board = new Board();
       const horse = new Horse(Player.SENTE);
-      const moves = horse.getValidMoves(board);
-      expect(moves).toHaveLength(0);
+      const destinations = horse.getValidMoves(board);
+      expect(destinations).toHaveLength(0);
     });
   });
 
@@ -94,7 +96,7 @@ describe('Horse', () => {
   describe('promote', () => {
     it('馬は成り駒に変換できない', () => {
       const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
-      expect(() => horse.promote()).toThrow('この駒は成ることができません');
+      expect(() => horse.promote(createPiece)).toThrow('この駒は成ることができません');
     });
   });
 });

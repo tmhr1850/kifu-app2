@@ -148,7 +148,9 @@ describe('GameRules', () => {
       const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
       // 盤の中央(4,4)にいる飛車の移動範囲は、縦(8) + 横(8) = 16マス
-      expect(moves.length).toBe(16);
+      // 敵陣(0-2行目)に入る3マス(2,4),(1,4),(0,4)では成りの選択肢が加わるため、
+      // 13(不成) + 3*2(成/不成) = 19手
+      expect(moves.length).toBe(19);
     });
 
     it('should stop sliding moves at friendly pieces', () => {
@@ -159,7 +161,11 @@ describe('GameRules', () => {
 
       const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      const rightMoves = moves.filter(m => m.from.row === 4 && m.to.column > 4);
+      const rightMoves = moves.filter(m => 
+        m.from.row === 4 && 
+        m.from.column === 4 &&
+        m.to.column > 4
+      );
       // (4, 5)への1マスのみ
       expect(rightMoves.length).toBe(1);
       expect(rightMoves[0].to).toEqual({ row: 4, column: 5 });
@@ -228,10 +234,6 @@ describe('GameRules', () => {
       const verticalMoves = protectingRookMoves.filter(m => m.to.column === 4);
       expect(verticalMoves.length).toBeGreaterThan(0);
     });
-  });
-
-  describe('isInCheck', () => {
-    // これらのテストはすでにit('王手を正しく検知できること')などでカバーされているため削除
   });
 
   describe('isCheckmate', () => {

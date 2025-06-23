@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Dragon } from './dragon';
 import { Board } from '../../board/board';
 import { Player, PieceType } from '../types';
+import { createPiece } from '../factory';
 
 describe('Dragon', () => {
   let board: Board;
@@ -22,8 +23,7 @@ describe('Dragon', () => {
       const dragon = new Dragon(Player.SENTE, { row: 4, column: 4 });
       board.setPiece({ row: 4, column: 4 }, dragon);
 
-      const moves = dragon.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = dragon.getValidMoves(board);
 
       // 飛車と同じ縦横の動き
       // 上方向
@@ -70,8 +70,7 @@ describe('Dragon', () => {
       board.setPiece({ row: 4, column: 4 }, dragon);
       board.setPiece({ row: 2, column: 4 }, blockingPiece);
 
-      const moves = dragon.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = dragon.getValidMoves(board);
 
       // 敵の駒の位置までは移動できる
       expect(destinations).toContainEqual({ row: 2, column: 4 });
@@ -87,8 +86,7 @@ describe('Dragon', () => {
       board.setPiece({ row: 4, column: 4 }, dragon);
       board.setPiece({ row: 3, column: 3 }, allyPiece);
 
-      const moves = dragon.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
+      const destinations = dragon.getValidMoves(board);
 
       expect(destinations).not.toContainEqual({ row: 3, column: 3 });
     });
@@ -96,8 +94,8 @@ describe('Dragon', () => {
     it('持ち駒の場合は移動できない', () => {
       const dragon = new Dragon(Player.SENTE);
 
-      const moves = dragon.getValidMoves(board);
-      expect(moves).toHaveLength(0);
+      const destinations = dragon.getValidMoves(board);
+      expect(destinations).toHaveLength(0);
     });
   });
 
@@ -114,7 +112,7 @@ describe('Dragon', () => {
     it('竜は成り駒に変換できない', () => {
       const dragon = new Dragon(Player.SENTE, { row: 4, column: 4 });
       
-      expect(() => dragon.promote()).toThrow('この駒は成ることができません');
+      expect(() => dragon.promote(createPiece)).toThrow('この駒は成ることができません');
     });
   });
 });

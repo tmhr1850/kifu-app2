@@ -15,10 +15,10 @@ export interface IPiece {
   
   /**
    * 指定された盤面で移動可能な位置を計算
-   * @param board 現在の盤面状態
+   * @param board 盤面の状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[];
+  getValidMoves(board: IBoard): Position[];
   
   /**
    * 成り駒への変換が可能かチェック
@@ -29,9 +29,16 @@ export interface IPiece {
   
   /**
    * 成り駒に変換
+   * @param createPiece 駒を生成するファクトリ関数
    * @returns 成り駒のインスタンス
    */
-  promote(): IPiece;
+  promote(
+    createPiece: (
+      type: PieceType,
+      player: Player,
+      position: Position | null,
+    ) => IPiece,
+  ): IPiece;
   
   /**
    * 駒を複製

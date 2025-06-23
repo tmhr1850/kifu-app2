@@ -1,6 +1,6 @@
 import { IBoard } from '../interface';
 import { Piece } from '../piece';
-import { PieceType, Player, Position, Move } from '../types';
+import { PieceType, Player, Position } from '../types';
 
 /**
  * 玉クラス
@@ -16,11 +16,11 @@ export class King extends Piece {
    * @param board 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[] {
+  getValidMoves(board: IBoard): Position[] {
     if (!this.position) {
       return [];
     }
-    const moves: Move[] = [];
+    const moves: Position[] = [];
     const destinations = [
       { row: this.position.row - 1, column: this.position.column - 1 }, // 左上
       { row: this.position.row - 1, column: this.position.column },     // 上
@@ -36,7 +36,7 @@ export class King extends Piece {
       if (board.isValidPosition(newPosition)) {
         const pieceAtDestination = board.getPiece(newPosition);
         if (!pieceAtDestination || pieceAtDestination.player !== this.player) {
-          moves.push({ from: this.position, to: newPosition });
+          moves.push(newPosition);
         }
       }
     }

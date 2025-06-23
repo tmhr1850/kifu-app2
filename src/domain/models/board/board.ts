@@ -123,11 +123,10 @@ export class Board implements IBoard {
 
     // 成りの処理
     if (move.isPromotion) {
-      const promotedPiece = movedPiece.promote();
-      if (promotedPiece) {
-        newBoard.setPiece(move.to, promotedPiece);
-        return newBoard;
-      }
+      // promoteは成れない駒の場合エラーを投げる
+      const promotedPiece = movedPiece.promote(createPiece);
+      newBoard.setPiece(move.to, promotedPiece);
+      return newBoard;
     }
 
     // 移動先に新しい駒を配置

@@ -80,7 +80,7 @@ describe('Piece', () => {
   describe('promote and unpromote', () => {
     it('成れる駒は成ると成り駒になること', () => {
       const silver = new Silver(Player.SENTE, { row: 2, column: 2 });
-      const promoted = silver.promote();
+      const promoted = silver.promote(createPiece);
       expect(promoted).toBeInstanceOf(PromotedSilver);
       expect(promoted?.type).toBe(PieceType.PROMOTED_SILVER);
     });
@@ -95,9 +95,9 @@ describe('Piece', () => {
     //   expect(demoted?.type).toBe(PieceType.SILVER);
     // });
 
-    it('成れない駒はpromoteを呼んでもnullが返ること', () => {
+    it('成れない駒はpromoteを呼んでもエラーを投げること', () => {
       const king = new King(Player.SENTE, { row: 0, column: 4 });
-      expect(king.promote()).toBeNull();
+      expect(() => king.promote(createPiece)).toThrow('この駒は成ることができません');
     });
   });
 
@@ -140,9 +140,10 @@ describe('Piece', () => {
         row: 6,
         column: 7,
       });
+      board.setPiece({ row: 6, column: 7 }, pawn);
       const moves = pawn.getValidMoves(board);
       expect(moves.length).toBe(1);
-      expect(moves[0].to).toEqual({ row: 5, column: 7 });
+      expect(moves[0]).toEqual({ row: 5, column: 7 });
     });
 
     it('飛車は障害物がなければ全ての直線方向に動ける', () => {
@@ -150,6 +151,7 @@ describe('Piece', () => {
         row: 4,
         column: 4,
       });
+      board.setPiece({ row: 4, column: 4 }, rook);
       const moves = rook.getValidMoves(board);
       // 縦8マス + 横8マス = 16マス
       expect(moves.length).toBe(16);
@@ -164,9 +166,10 @@ describe('Piece', () => {
         row: 4,
         column: 2,
       });
+      board.setPiece({ row: 4, column: 4 }, rook);
       board.setPiece({ row: 4, column: 2 }, friendlyPawn);
       const moves = rook.getValidMoves(board);
-      const leftMoves = moves.filter(m => m.to.column < 4);
+      const leftMoves = moves.filter(m => m.column < 4);
       expect(leftMoves.length).toBe(1); // (4,3) のみ
     });
   });

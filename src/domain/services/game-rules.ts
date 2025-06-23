@@ -1,5 +1,5 @@
-import { IBoard } from '../models/piece/interface';
-import { Player, Position, Move } from '../models/piece/types';
+import { IBoard, IPiece } from '../models/piece/interface';
+import { Player, Position, Move, PieceType } from '../models/piece/types';
 
 /**
  * ゲームのルールを管理するクラス
@@ -19,16 +19,50 @@ export class GameRules {
    * @returns 合法手の配列
    */
   public generateLegalMoves(board: IBoard, player: Player): Move[] {
-    const allMoves: Move[] = [];
+    const allPossibleMoves: Move[] = [];
     const pieces = board.getPieces(player);
 
     for (const piece of pieces) {
-      const moves = piece.getValidMoves(board);
-      allMoves.push(...moves);
+      const from = piece.position;
+      if (!from) continue; // 持ち駒はここでは扱わない
+
+      const validDestinations = piece.getValidMoves(board);
+
+      for (const to of validDestinations) {
+        // 成りのロジック
+        const canPromote = piece.canPromote(to);
+
+        // 強制成りの判定
+        const isPawnOrLance =
+          piece.type === PieceType.PAWN || piece.type === PieceType.LANCE;
+        const isKnight = piece.type === PieceType.KNIGHT;
+        const lastRow = player === Player.SENTE ? 0 : 8;
+        const secondToLastRow = player === Player.SENTE ? 1 : 7;
+
+        let forcePromote = false;
+        if (isPawnOrLance && to.row === lastRow) {
+          forcePromote = true;
+        }
+        if (
+          isKnight &&
+          (to.row === lastRow || to.row === secondToLastRow)
+        ) {
+          forcePromote = true;
+        }
+
+        if (forcePromote) {
+          allPossibleMoves.push({ from, to, isPromotion: true });
+        } else if (canPromote) {
+          allPossibleMoves.push({ from, to, isPromotion: true });
+          allPossibleMoves.push({ from, to, isPromotion: false });
+        } else {
+          allPossibleMoves.push({ from, to, isPromotion: false });
+        }
+      }
     }
 
     // 王手になる手（反則手）を除外する
-    return allMoves.filter(move => {
+    return allPossibleMoves.filter(move => {
       const testBoard = board.applyMove(move);
       return !this.isInCheck(testBoard, player);
     });
@@ -52,7 +86,7 @@ export class GameRules {
 
     for (const piece of opponentPieces) {
       const moves = piece.getValidMoves(board);
-      if (moves.some(move => this.positionsEqual(move.to, kingPosition))) {
+      if (moves.some(move => this.positionsEqual(move, kingPosition))) {
         return true;
       }
     }
@@ -86,7 +120,7 @@ export class GameRules {
       if (
         piece &&
         piece.player === player &&
-        piece.type === 'PAWN'
+        piece.type === PieceType.PAWN
       ) {
         return true;
       }

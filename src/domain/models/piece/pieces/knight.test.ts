@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Knight } from './knight';
 import { Board } from '../../board/board';
 import { Player, PieceType, Position } from '../types';
+import { createPiece } from '../factory';
 
 describe('Knight', () => {
   let board: Board;
@@ -34,8 +35,7 @@ describe('Knight', () => {
         const knight = new Knight(Player.SENTE, { row: 6, column: 2 });
         board.setPiece({ row: 6, column: 2 }, knight);
 
-        const moves = knight.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = knight.getValidMoves(board);
 
         expect(destinations).toHaveLength(2);
         expect(destinations).toContainEqual({ row: 4, column: 1 });
@@ -49,7 +49,7 @@ describe('Knight', () => {
         board.setPiece({ row: 4, column: 1 }, ally);
 
         const moves = knight.getValidMoves(board);
-        expect(moves.map(m => m.to)).not.toContainEqual({ row: 4, column: 1 });
+        expect(moves).not.toContainEqual({ row: 4, column: 1 });
         expect(moves).toHaveLength(1);
       });
     });
@@ -59,8 +59,7 @@ describe('Knight', () => {
         const knight = new Knight(Player.GOTE, { row: 2, column: 2 });
         board.setPiece({ row: 2, column: 2 }, knight);
 
-        const moves = knight.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = knight.getValidMoves(board);
 
         expect(destinations).toHaveLength(2);
         expect(destinations).toContainEqual({ row: 4, column: 1 });
@@ -85,7 +84,7 @@ describe('Knight', () => {
   describe('promote', () => {
     it('桂馬を成桂に変換できる', () => {
       const knight = new Knight(Player.SENTE, { row: 4, column: 2 });
-      const promoted = knight.promote();
+      const promoted = knight.promote(createPiece);
       expect(promoted.type).toBe(PieceType.PROMOTED_KNIGHT);
       expect(promoted.player).toBe(Player.SENTE);
       expect(promoted.position).toEqual(knight.position);

@@ -1,6 +1,6 @@
 import { IBoard } from '../interface';
 import { Piece } from '../piece';
-import { PieceType, Player, Position, Move } from '../types';
+import { PieceType, Player, Position } from '../types';
 import { King } from './king';
 import { Rook } from './rook';
 
@@ -18,22 +18,34 @@ export class Dragon extends Piece {
    * @param board 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[] {
+  getValidMoves(board: IBoard): Position[] {
     if (!this.position) return [];
+
+    const moveSet = new Map<string, Position>();
 
     // 飛車の動き
     const rookMoves = new Rook(this.player, this.position).getValidMoves(board);
+    for (const pos of rookMoves) {
+      const key = `${pos.row},${pos.column}`;
+      moveSet.set(key, pos);
+    }
 
     // 王の動きの一部（斜め）
     const king = new King(this.player, this.position);
     const kingAllMoves = king.getValidMoves(board);
-
-    // Rookの動きは直線のみなので、Kingの動きから斜めの動きだけをフィルタリング
-    const kingDiagonalMoves = kingAllMoves.filter(kingMove => {
-        return Math.abs(kingMove.to.row - this.position!.row) === Math.abs(kingMove.to.column - this.position!.column)
+    const kingDiagonalMoves = kingAllMoves.filter(pos => {
+      return (
+        Math.abs(pos.row - this.position!.row) === 1 &&
+        Math.abs(pos.column - this.position!.column) === 1
+      );
     });
 
-    return [...rookMoves, ...kingDiagonalMoves];
+    for (const pos of kingDiagonalMoves) {
+      const key = `${pos.row},${pos.column}`;
+      moveSet.set(key, pos);
+    }
+
+    return Array.from(moveSet.values());
   }
 
   clone(position?: Position): Dragon {

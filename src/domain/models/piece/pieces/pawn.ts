@@ -16,8 +16,8 @@ export class Pawn extends Piece {
    * @param board 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[] {
-    const moves: Move[] = [];
+  getValidMoves(board: IBoard): Position[] {
+    const moves: Position[] = [];
     if (!this.position) return moves;
 
     const direction = this.player === Player.SENTE ? -1 : 1;
@@ -27,7 +27,7 @@ export class Pawn extends Piece {
     if (board.isValidPosition(nextPosition)) {
       const piece = board.getPiece(nextPosition);
       if (!piece || piece.player !== this.player) {
-        moves.push({ from: this.position, to: nextPosition });
+        moves.push(nextPosition);
       }
     }
 

@@ -16,12 +16,12 @@ export class Rook extends Piece {
    * @param board 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[] {
+  getValidMoves(board: IBoard): Position[] {
     if (!this.position) {
       return [];
     }
 
-    const moves: Move[] = [];
+    const moves: Position[] = [];
     const directions = [
       { dr: -1, dc: 0 }, // 上
       { dr: 1, dc: 0 },  // 下
@@ -44,23 +44,12 @@ export class Rook extends Piece {
         const pieceAtDestination = board.getPiece(newPosition);
         
         if (pieceAtDestination) {
-          // 敵の駒なら取れる
           if (pieceAtDestination.player !== this.player) {
-            moves.push({
-              from: this.position,
-              to: newPosition,
-              isPromotion: this.canPromote(newPosition),
-            });
+            moves.push(newPosition);
           }
-          // 駒があったらそれ以上進めない
           break;
         }
-
-        moves.push({
-          from: this.position,
-          to: newPosition,
-          isPromotion: this.canPromote(newPosition),
-        });
+        moves.push(newPosition);
       }
     }
 

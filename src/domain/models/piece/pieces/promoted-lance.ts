@@ -1,6 +1,6 @@
 import { IBoard } from '../interface';
 import { Piece } from '../piece';
-import { PieceType, Player, Position, Move } from '../types';
+import { PieceType, Player, Position } from '../types';
 import { Gold } from './gold';
 
 /**
@@ -12,7 +12,7 @@ export class PromotedLance extends Piece {
     super(PieceType.PROMOTED_LANCE, player, position);
   }
 
-  getValidMoves(board: IBoard): Move[] {
+  getValidMoves(board: IBoard): Position[] {
     // 成香の動きは金と同じ
     const gold = new Gold(this.player, this.position);
     return gold.getValidMoves(board);
