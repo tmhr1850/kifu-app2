@@ -17,10 +17,10 @@ export class Piece implements IPiece {
 
   /**
    * 移動可能な位置を計算（基底クラスでは空配列）
-   * @param board 現在の盤面状態
+   * @param _board 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[] {
+  getValidMoves(_board: IBoard): Move[] {
     return [];
   }
 
