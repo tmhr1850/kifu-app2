@@ -12,6 +12,16 @@ import { Player, Position, Move, PieceType } from '../models/piece/types';
  * 骨格のみが実装されています。
  */
 export class GameRules {
+  // 攻撃パターンのキャッシュ
+  private attackCache = new Map<string, Position[]>();
+
+  /**
+   * キャッシュをクリアする
+   */
+  public clearCache(): void {
+    this.attackCache.clear();
+  }
+
   /**
    * 指定されたプレイヤーの全ての合法手を生成する
    * @param board - 現在の盤面
@@ -19,8 +29,11 @@ export class GameRules {
    * @returns 合法手の配列
    */
   public generateLegalMoves(board: IBoard, player: Player): Move[] {
-    const allPossibleMoves: Move[] = [];
+    const legalMoves: Move[] = [];
     const pieces = board.getPieces(player);
+    
+    // 最初に現在王手されているかチェック
+    const currentlyInCheck = this.isInCheck(board, player);
 
     for (const piece of pieces) {
       const from = piece.position;
@@ -50,22 +63,28 @@ export class GameRules {
           forcePromote = true;
         }
 
+        // 移動候補を作成
+        const moveCandidates: Move[] = [];
         if (forcePromote) {
-          allPossibleMoves.push({ from, to, isPromotion: true });
+          moveCandidates.push({ from, to, isPromotion: true });
         } else if (canPromote) {
-          allPossibleMoves.push({ from, to, isPromotion: true });
-          allPossibleMoves.push({ from, to, isPromotion: false });
+          moveCandidates.push({ from, to, isPromotion: true });
+          moveCandidates.push({ from, to, isPromotion: false });
         } else {
-          allPossibleMoves.push({ from, to, isPromotion: false });
+          moveCandidates.push({ from, to, isPromotion: false });
+        }
+
+        // 各移動候補をチェック
+        for (const move of moveCandidates) {
+          const testBoard = board.applyMove(move);
+          if (!this.isInCheck(testBoard, player)) {
+            legalMoves.push(move);
+          }
         }
       }
     }
 
-    // 王手になる手（反則手）を除外する
-    return allPossibleMoves.filter(move => {
-      const testBoard = board.applyMove(move);
-      return !this.isInCheck(testBoard, player);
-    });
+    return legalMoves;
   }
 
   /**

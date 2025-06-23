@@ -63,11 +63,16 @@ export class Board implements IBoard {
    * @returns 新しいBoardインスタンス
    */
   public clone(): IBoard {
-    const newSquares = this.squares.map(row => {
-      return row.map(piece => {
-        return piece ? piece.clone() : null;
-      });
-    });
+    const newSquares: (IPiece | null)[][] = new Array(Board.SIZE);
+    
+    for (let i = 0; i < Board.SIZE; i++) {
+      newSquares[i] = new Array(Board.SIZE);
+      for (let j = 0; j < Board.SIZE; j++) {
+        const piece = this.squares[i][j];
+        newSquares[i][j] = piece ? piece.clone() : null;
+      }
+    }
+    
     return new Board(newSquares);
   }
 
