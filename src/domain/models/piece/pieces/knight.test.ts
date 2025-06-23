@@ -74,12 +74,6 @@ describe('Knight', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('先手の場合、敵陣に入る時に成れる', () => {
-      const knight = new Knight(Player.SENTE, { row: 4, column: 2 });
-      expect(knight.canPromote({ row: 2, column: 1 })).toBe(true);
-    });
-  });
 
   describe('promote', () => {
     it('桂馬を成桂に変換できる', () => {

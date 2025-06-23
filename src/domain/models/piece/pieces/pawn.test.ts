@@ -109,33 +109,6 @@ describe('Pawn', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('先手の場合、敵陣に入る時に成れる', () => {
-      const pawn = new Pawn(Player.SENTE, { row: 3, column: 5 });
-      
-      expect(pawn.canPromote({ row: 2, column: 5 })).toBe(true);
-    });
-
-    it('先手の場合、2段目から1段目への移動時は強制的に成る必要がある', () => {
-      const pawn = new Pawn(Player.SENTE, { row: 2, column: 5 });
-      
-      // この実装では canPromote は true を返すが、
-      // 実際のゲームロジックでは強制成りの判定が必要
-      expect(pawn.canPromote({ row: 0, column: 4 })).toBe(true);
-    });
-
-    it('後手の場合、敵陣に入る時に成れる', () => {
-      const pawn = new Pawn(Player.GOTE, { row: 5, column: 4 }); // 5六歩
-      
-      expect(pawn.canPromote({ row: 6, column: 4 })).toBe(true);
-    });
-
-    it('敵陣外での移動では成れない', () => {
-      const pawn = new Pawn(Player.SENTE, { row: 4, column: 4 }); // 5五歩
-      
-      expect(pawn.canPromote({ row: 3, column: 4 })).toBe(false);
-    });
-  });
 
   describe('promote', () => {
     it('歩をと金に変換できる', () => {

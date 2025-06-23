@@ -20,12 +20,6 @@ export interface IPiece {
    */
   getValidMoves(board: IBoard): Position[];
   
-  /**
-   * 成り駒への変換が可能かチェック
-   * @param to 移動先の位置
-   * @returns 成り可能な場合true
-   */
-  canPromote(to: Position): boolean;
   
   /**
    * 成り駒に変換

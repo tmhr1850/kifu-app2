@@ -136,26 +136,6 @@ describe('Silver（銀）', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('敵陣に入る時に成れる', () => {
-      const silver = new Silver(Player.SENTE, { row: 3, column: 4 });
-      
-      expect(silver.canPromote({ row: 2, column: 4 })).toBe(true);
-      expect(silver.canPromote({ row: 1, column: 4 })).toBe(true);
-    });
-
-    it('敵陣から出る時も成れる', () => {
-      const silver = new Silver(Player.SENTE, { row: 2, column: 4 });
-      
-      expect(silver.canPromote({ row: 3, column: 4 })).toBe(true);
-    });
-
-    it('敵陣外での移動では成れない', () => {
-      const silver = new Silver(Player.SENTE, { row: 4, column: 4 });
-      
-      expect(silver.canPromote({ row: 3, column: 4 })).toBe(false);
-    });
-  });
 
   describe('promote', () => {
     it('銀を成銀に変換できる', () => {
