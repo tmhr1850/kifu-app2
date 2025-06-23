@@ -1,6 +1,8 @@
 import { IBoard } from '../interface';
 import { Piece } from '../piece';
 import { PieceType, Player, Position, Move } from '../types';
+import { Bishop } from './bishop';
+import { King } from './king';
 
 /**
  * 馬（成り角）クラス
@@ -17,84 +19,27 @@ export class Horse extends Piece {
    * @returns 移動可能な位置の配列
    */
   getValidMoves(board: IBoard): Move[] {
-    if (!this.position) {
-      return [];
-    }
+    if (!this.position) return [];
 
-    const moves: Move[] = [];
-    
-    // 角と同じ斜めの動き
-    const diagonalDirections = [
-      { dr: -1, dc: -1 }, // 左上
-      { dr: -1, dc: 1 },  // 右上
-      { dr: 1, dc: -1 },  // 左下
-      { dr: 1, dc: 1 },   // 右下
-    ];
+    // 角の動き
+    const bishopMoves = new Bishop(this.player, this.position).getValidMoves(board);
 
-    for (const { dr, dc } of diagonalDirections) {
-      // 各方向に進めるだけ進む
-      for (let i = 1; i <= 8; i++) {
-        const newPosition: Position = {
-          row: this.position.row + dr * i,
-          column: this.position.column + dc * i,
-        };
+    // 王の動きの一部（上下左右）
+    const kingLikeMoves: Move[] = [];
+    const king = new King(this.player, this.position);
+    const kingAllMoves = king.getValidMoves(board);
 
-        if (!board.isValidPosition(newPosition)) {
-          break;
-        }
+    // Bishopの動きは斜めのみなので、Kingの動きから直線的な動きだけをフィルタリング
+    const bishopMovePositions = new Set(bishopMoves.map(m => `${m.to.row},${m.to.column}`));
+    const kingStraightMoves = kingAllMoves.filter(kingMove => {
+        const isDiagonal = Math.abs(kingMove.to.row - this.position!.row) === Math.abs(kingMove.to.column - this.position!.column)
+        return !isDiagonal;
+    });
 
-        const pieceAtDestination = board.getPieceAt(newPosition);
-        
-        if (pieceAtDestination) {
-          // 敵の駒なら取れる
-          if (pieceAtDestination.player !== this.player) {
-            moves.push({
-              from: this.position,
-              to: newPosition,
-            });
-          }
-          // 駒があったらそれ以上進めない
-          break;
-        }
+    return [...bishopMoves, ...kingStraightMoves];
+  }
 
-        moves.push({
-          from: this.position,
-          to: newPosition,
-        });
-      }
-    }
-
-    // 縦横1マスの動き
-    const straightDirections = [
-      { dr: -1, dc: 0 }, // 上
-      { dr: 1, dc: 0 },  // 下
-      { dr: 0, dc: -1 }, // 左
-      { dr: 0, dc: 1 },  // 右
-    ];
-
-    for (const { dr, dc } of straightDirections) {
-      const newPosition: Position = {
-        row: this.position.row + dr,
-        column: this.position.column + dc,
-      };
-
-      if (!board.isValidPosition(newPosition)) {
-        continue;
-      }
-
-      const pieceAtDestination = board.getPieceAt(newPosition);
-      
-      // 移動先に味方の駒がある場合は移動不可
-      if (pieceAtDestination && pieceAtDestination.player === this.player) {
-        continue;
-      }
-
-      moves.push({
-        from: this.position,
-        to: newPosition,
-      });
-    }
-
-    return moves;
+  clone(position?: Position): Horse {
+    return new Horse(this.player, position ?? this.position);
   }
 }

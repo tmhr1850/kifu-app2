@@ -20,37 +20,30 @@ export class King extends Piece {
     if (!this.position) {
       return [];
     }
-
     const moves: Move[] = [];
-    const directions = [
-      { dr: -1, dc: -1 }, { dr: -1, dc: 0 }, { dr: -1, dc: 1 },
-      { dr: 0, dc: -1 },                     { dr: 0, dc: 1 },
-      { dr: 1, dc: -1 },  { dr: 1, dc: 0 },  { dr: 1, dc: 1 },
+    const destinations = [
+      { row: this.position.row - 1, column: this.position.column - 1 }, // 左上
+      { row: this.position.row - 1, column: this.position.column },     // 上
+      { row: this.position.row - 1, column: this.position.column + 1 }, // 右上
+      { row: this.position.row,     column: this.position.column - 1 }, // 左
+      { row: this.position.row,     column: this.position.column + 1 }, // 右
+      { row: this.position.row + 1, column: this.position.column - 1 }, // 左下
+      { row: this.position.row + 1, column: this.position.column },     // 下
+      { row: this.position.row + 1, column: this.position.column + 1 }, // 右下
     ];
 
-    for (const { dr, dc } of directions) {
-      const newPosition: Position = {
-        row: this.position.row + dr,
-        column: this.position.column + dc,
-      };
-
-      if (!board.isValidPosition(newPosition)) {
-        continue;
+    for (const newPosition of destinations) {
+      if (board.isValidPosition(newPosition)) {
+        const pieceAtDestination = board.getPiece(newPosition);
+        if (!pieceAtDestination || pieceAtDestination.player !== this.player) {
+          moves.push({ from: this.position, to: newPosition });
+        }
       }
-
-      const pieceAtDestination = board.getPieceAt(newPosition);
-      
-      // 移動先に味方の駒がある場合は移動不可
-      if (pieceAtDestination && pieceAtDestination.player === this.player) {
-        continue;
-      }
-
-      moves.push({
-        from: this.position,
-        to: newPosition,
-      });
     }
-
     return moves;
+  }
+
+  clone(position?: Position): King {
+    return new King(this.player, position ?? this.position);
   }
 }

@@ -35,7 +35,7 @@ export class Lance extends Piece {
         break;
       }
 
-      const pieceAtDestination = board.getPieceAt(newPosition);
+      const pieceAtDestination = board.getPiece(newPosition);
       
       if (pieceAtDestination) {
         // 敵の駒なら取れる
@@ -58,5 +58,9 @@ export class Lance extends Piece {
     }
 
     return moves;
+  }
+
+  clone(position?: Position): Lance {
+    return new Lance(this.player, position ?? this.position);
   }
 }

@@ -17,35 +17,24 @@ export class Pawn extends Piece {
    * @returns 移動可能な位置の配列
    */
   getValidMoves(board: IBoard): Move[] {
-    if (!this.position) {
-      return [];
-    }
-
     const moves: Move[] = [];
-    const forward = this.player === Player.SENTE ? -1 : 1;
+    if (!this.position) return moves;
 
-    const newPosition: Position = {
-      row: this.position.row + forward,
-      column: this.position.column,
-    };
+    const direction = this.player === Player.SENTE ? -1 : 1;
+    const nextRow = this.position.row + direction;
+    const nextPosition = { row: nextRow, column: this.position.column };
 
-    if (!board.isValidPosition(newPosition)) {
-      return moves;
+    if (board.isValidPosition(nextPosition)) {
+      const piece = board.getPiece(nextPosition);
+      if (!piece || piece.player !== this.player) {
+        moves.push({ from: this.position, to: nextPosition });
+      }
     }
-
-    const pieceAtDestination = board.getPieceAt(newPosition);
-    
-    // 移動先に味方の駒がある場合は移動不可
-    if (pieceAtDestination && pieceAtDestination.player === this.player) {
-      return moves;
-    }
-
-    moves.push({
-      from: this.position,
-      to: newPosition,
-      isPromotion: this.canPromote(newPosition),
-    });
 
     return moves;
+  }
+
+  clone(position?: Position): Pawn {
+    return new Pawn(this.player, position ?? this.position);
   }
 }

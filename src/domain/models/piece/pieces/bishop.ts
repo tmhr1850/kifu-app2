@@ -41,7 +41,7 @@ export class Bishop extends Piece {
           break;
         }
 
-        const pieceAtDestination = board.getPieceAt(newPosition);
+        const pieceAtDestination = board.getPiece(newPosition);
         
         if (pieceAtDestination) {
           // 敵の駒なら取れる
@@ -65,5 +65,9 @@ export class Bishop extends Piece {
     }
 
     return moves;
+  }
+
+  clone(position?: Position): Bishop {
+    return new Bishop(this.player, position ?? this.position);
   }
 }

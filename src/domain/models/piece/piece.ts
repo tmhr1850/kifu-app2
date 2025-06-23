@@ -4,10 +4,10 @@ import { PieceType, Player, Position, Move } from './types';
 /**
  * 駒の基底クラス
  */
-export class Piece implements IPiece {
+export abstract class Piece implements IPiece {
   readonly type: PieceType;
   readonly player: Player;
-  readonly position: Position | null;
+  position: Position | null;
 
   constructor(type: PieceType, player: Player, position: Position | null = null) {
     this.type = type;
@@ -81,8 +81,23 @@ export class Piece implements IPiece {
    * @param position 新しい位置（省略時は現在位置）
    * @returns 複製された駒
    */
-  clone(position?: Position): IPiece {
-    return new Piece(this.type, this.player, position ?? this.position);
+  abstract clone(position?: Position): IPiece;
+
+  /**
+   * 他の駒インスタンスと等価であるか比較
+   * @param otherPiece 比較対象の駒
+   * @returns 等価である場合true
+   */
+  public equals(otherPiece: IPiece | null): boolean {
+    if (otherPiece === null) {
+      return false;
+    }
+    return (
+      this.type === otherPiece.type &&
+      this.player === otherPiece.player &&
+      this.position?.row === otherPiece.position?.row &&
+      this.position?.column === otherPiece.position?.column
+    );
   }
 
   /**

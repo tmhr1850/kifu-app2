@@ -1,19 +1,23 @@
+import { IBoard } from '../interface';
+import { Piece } from '../piece';
+import { PieceType, Player, Position, Move } from '../types';
 import { Gold } from './gold';
-import { PieceType, Player, Position } from '../types';
 
 /**
  * と金クラス
  * 金と同じ動きをする
  */
-export class Tokin extends Gold {
+export class Tokin extends Piece {
   constructor(player: Player, position: Position | null = null) {
-    super(player, position);
-    // typeをと金に上書き
-    Object.defineProperty(this, 'type', {
-      value: PieceType.TOKIN,
-      writable: false,
-      enumerable: true,
-      configurable: false,
-    });
+    super(PieceType.TOKIN, player, position);
+  }
+
+  getValidMoves(board: IBoard): Move[] {
+    const gold = new Gold(this.player, this.position);
+    return gold.getValidMoves(board);
+  }
+
+  clone(position?: Position): Tokin {
+    return new Tokin(this.player, position ?? this.position);
   }
 }
