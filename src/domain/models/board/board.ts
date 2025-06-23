@@ -2,6 +2,7 @@ import { createPiece } from '../piece/factory';
 import { IBoard, IPiece } from '../piece/interface';
 import { Move, PieceType, Player, Position } from '../piece/types';
 import { Position as PositionClass } from '../position';
+import { InvalidMoveError } from '../../errors/invalid-move-error';
 
 /**
  * 将棋盤を表すクラス
@@ -133,9 +134,8 @@ export class Board implements IBoard {
     const originalPiece = newBoard.getPiece(move.from);
 
     if (!originalPiece) {
-      // 動かす駒がない場合は、ロジックエラーの可能性が高い
-      // 本来は呼び出し側(GameRules)が有効な手を渡す責務を持つ
-      throw new Error(`指定された位置(${move.from.row}, ${move.from.column})に駒が存在しません`);
+      // 動かす駒がないのは、呼び出し側(GameRules)の責務違反
+      throw new InvalidMoveError(move.from);
     }
 
     // 新しい位置情報を持つクローンを作成

@@ -5,6 +5,7 @@ import { createPiece } from '../piece/factory';
 import { IPiece } from '../piece/interface';
 import { Pawn } from '../piece/pieces/pawn';
 import { Move, PieceType, Player } from '../piece/types';
+import { InvalidMoveError } from '../../errors/invalid-move-error';
 
 describe('Board', () => {
   let board: Board;
@@ -139,6 +140,7 @@ describe('Board', () => {
       };
 
       // 実行と検証
+      expect(() => board.applyMove(invalidMove)).toThrow(InvalidMoveError);
       expect(() => board.applyMove(invalidMove)).toThrow(
         '指定された位置(4, 4)に駒が存在しません'
       );
