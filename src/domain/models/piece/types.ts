@@ -28,11 +28,15 @@ export enum Player {
 
 /**
  * 駒の位置を表す型
+ * @deprecated Position クラスを使用してください
  */
 export interface Position {
   row: number;    // 1-9
   column: number; // 1-9
 }
+
+// Position クラスを再エクスポート
+export { Position as PositionClass } from '../position';
 
 /**
  * 移動可能な位置の型

@@ -1,6 +1,7 @@
 import { createPiece } from '../piece/factory';
 import { IBoard, IPiece } from '../piece/interface';
 import { Move, PieceType, Player, Position } from '../piece/types';
+import { Position as PositionClass } from '../position';
 
 /**
  * 将棋盤を表すクラス
@@ -22,11 +23,36 @@ export class Board implements IBoard {
   }
 
   /**
+   * Position を正規化するヘルパーメソッド
+   * Position インターフェースまたは Position クラスを受け取り、
+   * 検証済みの座標を返す
+   * @private
+   */
+  private normalizePosition(position: Position): { row: number; column: number } {
+    if (position instanceof PositionClass) {
+      return position;
+    }
+    try {
+      const validPosition = PositionClass.fromObject(position);
+      return validPosition;
+    } catch {
+      // Position クラスの検証に失敗した場合は元のオブジェクトを返す
+      // 既存のコードとの互換性のため
+      return position;
+    }
+  }
+
+  /**
    * 指定された位置が盤面内であるか検証
    * @param position {row, column}
    * @returns boolean
    */
   public isValidPosition(position: Position): boolean {
+    // Position クラスのインスタンスなら常に有効
+    if (position instanceof PositionClass) {
+      return true;
+    }
+    // 既存のプレーンオブジェクトの場合の検証
     return (
       position.row >= 0 &&
       position.row < Board.SIZE &&
@@ -44,7 +70,8 @@ export class Board implements IBoard {
     if (!this.isValidPosition(position)) {
       return null;
     }
-    return this.squares[position.row][position.column];
+    const pos = this.normalizePosition(position);
+    return this.squares[pos.row][pos.column];
   }
 
   /**
@@ -54,7 +81,8 @@ export class Board implements IBoard {
    */
   public setPiece(position: Position, piece: IPiece | null): void {
     if (this.isValidPosition(position)) {
-      this.squares[position.row][position.column] = piece;
+      const pos = this.normalizePosition(position);
+      this.squares[pos.row][pos.column] = piece;
     }
   }
 
@@ -92,7 +120,7 @@ export class Board implements IBoard {
       for (let c = 0; c < Board.SIZE; c++) {
         const piece = this.squares[r][c];
         if (piece && piece.player === player && piece.type === PieceType.KING) {
-          return { row: r, column: c };
+          return new PositionClass(r, c);
         }
       }
     }
@@ -140,36 +168,36 @@ export class Board implements IBoard {
 
     const initialPlacement: { piece: PieceType; pos: Position; player: Player }[] = [
       // Sente pieces
-      { piece: PieceType.LANCE, pos: { row: 8, column: 0 }, player: Player.SENTE },
-      { piece: PieceType.KNIGHT, pos: { row: 8, column: 1 }, player: Player.SENTE },
-      { piece: PieceType.SILVER, pos: { row: 8, column: 2 }, player: Player.SENTE },
-      { piece: PieceType.GOLD, pos: { row: 8, column: 3 }, player: Player.SENTE },
-      { piece: PieceType.KING, pos: { row: 8, column: 4 }, player: Player.SENTE },
-      { piece: PieceType.GOLD, pos: { row: 8, column: 5 }, player: Player.SENTE },
-      { piece: PieceType.SILVER, pos: { row: 8, column: 6 }, player: Player.SENTE },
-      { piece: PieceType.KNIGHT, pos: { row: 8, column: 7 }, player: Player.SENTE },
-      { piece: PieceType.LANCE, pos: { row: 8, column: 8 }, player: Player.SENTE },
-      { piece: PieceType.ROOK, pos: { row: 7, column: 1 }, player: Player.SENTE },
-      { piece: PieceType.BISHOP, pos: { row: 7, column: 7 }, player: Player.SENTE },
+      { piece: PieceType.LANCE, pos: new PositionClass(8, 0), player: Player.SENTE },
+      { piece: PieceType.KNIGHT, pos: new PositionClass(8, 1), player: Player.SENTE },
+      { piece: PieceType.SILVER, pos: new PositionClass(8, 2), player: Player.SENTE },
+      { piece: PieceType.GOLD, pos: new PositionClass(8, 3), player: Player.SENTE },
+      { piece: PieceType.KING, pos: new PositionClass(8, 4), player: Player.SENTE },
+      { piece: PieceType.GOLD, pos: new PositionClass(8, 5), player: Player.SENTE },
+      { piece: PieceType.SILVER, pos: new PositionClass(8, 6), player: Player.SENTE },
+      { piece: PieceType.KNIGHT, pos: new PositionClass(8, 7), player: Player.SENTE },
+      { piece: PieceType.LANCE, pos: new PositionClass(8, 8), player: Player.SENTE },
+      { piece: PieceType.ROOK, pos: new PositionClass(7, 1), player: Player.SENTE },
+      { piece: PieceType.BISHOP, pos: new PositionClass(7, 7), player: Player.SENTE },
 
       // Gote pieces
-      { piece: PieceType.LANCE, pos: { row: 0, column: 0 }, player: Player.GOTE },
-      { piece: PieceType.KNIGHT, pos: { row: 0, column: 1 }, player: Player.GOTE },
-      { piece: PieceType.SILVER, pos: { row: 0, column: 2 }, player: Player.GOTE },
-      { piece: PieceType.GOLD, pos: { row: 0, column: 3 }, player: Player.GOTE },
-      { piece: PieceType.KING, pos: { row: 0, column: 4 }, player: Player.GOTE },
-      { piece: PieceType.GOLD, pos: { row: 0, column: 5 }, player: Player.GOTE },
-      { piece: PieceType.SILVER, pos: { row: 0, column: 6 }, player: Player.GOTE },
-      { piece: PieceType.KNIGHT, pos: { row: 0, column: 7 }, player: Player.GOTE },
-      { piece: PieceType.LANCE, pos: { row: 0, column: 8 }, player: Player.GOTE },
-      { piece: PieceType.BISHOP, pos: { row: 1, column: 1 }, player: Player.GOTE },
-      { piece: PieceType.ROOK, pos: { row: 1, column: 7 }, player: Player.GOTE },
+      { piece: PieceType.LANCE, pos: new PositionClass(0, 0), player: Player.GOTE },
+      { piece: PieceType.KNIGHT, pos: new PositionClass(0, 1), player: Player.GOTE },
+      { piece: PieceType.SILVER, pos: new PositionClass(0, 2), player: Player.GOTE },
+      { piece: PieceType.GOLD, pos: new PositionClass(0, 3), player: Player.GOTE },
+      { piece: PieceType.KING, pos: new PositionClass(0, 4), player: Player.GOTE },
+      { piece: PieceType.GOLD, pos: new PositionClass(0, 5), player: Player.GOTE },
+      { piece: PieceType.SILVER, pos: new PositionClass(0, 6), player: Player.GOTE },
+      { piece: PieceType.KNIGHT, pos: new PositionClass(0, 7), player: Player.GOTE },
+      { piece: PieceType.LANCE, pos: new PositionClass(0, 8), player: Player.GOTE },
+      { piece: PieceType.BISHOP, pos: new PositionClass(1, 1), player: Player.GOTE },
+      { piece: PieceType.ROOK, pos: new PositionClass(1, 7), player: Player.GOTE },
     ];
 
     // Pawns
     for (let i = 0; i < 9; i++) {
-      initialPlacement.push({ piece: PieceType.PAWN, pos: { row: 6, column: i }, player: Player.SENTE });
-      initialPlacement.push({ piece: PieceType.PAWN, pos: { row: 2, column: i }, player: Player.GOTE });
+      initialPlacement.push({ piece: PieceType.PAWN, pos: new PositionClass(6, i), player: Player.SENTE });
+      initialPlacement.push({ piece: PieceType.PAWN, pos: new PositionClass(2, i), player: Player.GOTE });
     }
     
     initialPlacement.forEach(({ piece, pos, player }) => {
