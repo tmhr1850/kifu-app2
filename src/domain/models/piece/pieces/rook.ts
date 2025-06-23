@@ -11,49 +11,52 @@ export class Rook extends Piece {
   }
 
   /**
-   * 飛車の移動可能な位置を計算
-   * 縦横に自由に移動可能（他の駒を飛び越えることはできない）
-   * @param board 現在の盤面状態
+   * 飛車の移動可能な位置を計算する静的メソッド
+   * @param piecePosition - 飛車の現在の位置
+   * @param player - プレイヤー
+   * @param board - 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Position[] {
-    if (!this.position) {
-      return [];
-    }
-
+  static getRookMoves(
+    piecePosition: Position,
+    player: Player,
+    board: IBoard,
+  ): Position[] {
     const moves: Position[] = [];
     const directions = [
-      { dr: -1, dc: 0 }, // 上
-      { dr: 1, dc: 0 },  // 下
-      { dr: 0, dc: -1 }, // 左
-      { dr: 0, dc: 1 },  // 右
+      { row: -1, column: 0 }, // 上
+      { row: 1, column: 0 }, // 下
+      { row: 0, column: -1 }, // 左
+      { row: 0, column: 1 }, // 右
     ];
 
-    for (const { dr, dc } of directions) {
-      // 各方向に進めるだけ進む
-      for (let i = 1; i <= 8; i++) {
-        const newPosition: Position = {
-          row: this.position.row + dr * i,
-          column: this.position.column + dc * i,
-        };
+    for (const dir of directions) {
+      let nextPos = {
+        row: piecePosition.row + dir.row,
+        column: piecePosition.column + dir.column,
+      };
 
-        if (!board.isValidPosition(newPosition)) {
-          break;
-        }
-
-        const pieceAtDestination = board.getPiece(newPosition);
-        
-        if (pieceAtDestination) {
-          if (pieceAtDestination.player !== this.player) {
-            moves.push(newPosition);
+      while (board.isValidPosition(nextPos)) {
+        const piece = board.getPiece(nextPos);
+        if (piece) {
+          if (piece.player !== player) {
+            moves.push(nextPos);
           }
           break;
         }
-        moves.push(newPosition);
+        moves.push(nextPos);
+        nextPos = {
+          row: nextPos.row + dir.row,
+          column: nextPos.column + dir.column,
+        };
       }
     }
-
     return moves;
+  }
+
+  getValidMoves(board: IBoard): Position[] {
+    if (!this.position) return [];
+    return Rook.getRookMoves(this.position, this.player, board);
   }
 
   clone(position?: Position): Rook {

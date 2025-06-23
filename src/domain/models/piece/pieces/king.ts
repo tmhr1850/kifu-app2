@@ -11,36 +11,48 @@ export class King extends Piece {
   }
 
   /**
-   * 玉の移動可能な位置を計算
-   * 周囲8マスに移動可能
-   * @param board 現在の盤面状態
+   * 王の移動可能な位置を計算する静的メソッド
+   * @param piecePosition - 王の現在の位置
+   * @param player - プレイヤー
+   * @param board - 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Position[] {
-    if (!this.position) {
-      return [];
-    }
+  static getKingMoves(
+    piecePosition: Position,
+    player: Player,
+    board: IBoard,
+  ): Position[] {
     const moves: Position[] = [];
-    const destinations = [
-      { row: this.position.row - 1, column: this.position.column - 1 }, // 左上
-      { row: this.position.row - 1, column: this.position.column },     // 上
-      { row: this.position.row - 1, column: this.position.column + 1 }, // 右上
-      { row: this.position.row,     column: this.position.column - 1 }, // 左
-      { row: this.position.row,     column: this.position.column + 1 }, // 右
-      { row: this.position.row + 1, column: this.position.column - 1 }, // 左下
-      { row: this.position.row + 1, column: this.position.column },     // 下
-      { row: this.position.row + 1, column: this.position.column + 1 }, // 右下
+    const directions = [
+      { row: -1, column: 0 },
+      { row: 1, column: 0 },
+      { row: 0, column: -1 },
+      { row: 0, column: 1 },
+      { row: -1, column: -1 },
+      { row: -1, column: 1 },
+      { row: 1, column: -1 },
+      { row: 1, column: 1 },
     ];
 
-    for (const newPosition of destinations) {
-      if (board.isValidPosition(newPosition)) {
-        const pieceAtDestination = board.getPiece(newPosition);
-        if (!pieceAtDestination || pieceAtDestination.player !== this.player) {
-          moves.push(newPosition);
+    for (const dir of directions) {
+      const nextPos = {
+        row: piecePosition.row + dir.row,
+        column: piecePosition.column + dir.column,
+      };
+
+      if (board.isValidPosition(nextPos)) {
+        const piece = board.getPiece(nextPos);
+        if (!piece || piece.player !== player) {
+          moves.push(nextPos);
         }
       }
     }
     return moves;
+  }
+
+  getValidMoves(board: IBoard): Position[] {
+    if (!this.position) return [];
+    return King.getKingMoves(this.position, this.player, board);
   }
 
   clone(position?: Position): King {
