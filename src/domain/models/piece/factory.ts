@@ -1,4 +1,3 @@
-import { PieceType, Player, Position } from './types';
 import { IPiece } from './interface';
 import {
   King,
@@ -16,6 +15,7 @@ import {
   PromotedLance,
   Tokin,
 } from './pieces';
+import { PieceType, Player, Position } from './types';
 
 /**
  * 駒を作成するファクトリ関数

@@ -34,6 +34,10 @@
     "postcss": "^8",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.0",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-import-resolver-typescript": "^3.6.1"
   }
 }

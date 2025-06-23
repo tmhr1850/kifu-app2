@@ -1,6 +1,6 @@
+import { IBoard, IPiece } from './interface';
 import { Piece } from './piece';
 import { PieceType, Player, Position } from './types';
-import { IBoard, IPiece } from './interface';
 
 // モックボードの作成
 class MockBoard implements IBoard {

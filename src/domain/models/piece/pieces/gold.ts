@@ -1,6 +1,6 @@
+import { IBoard } from '../interface';
 import { Piece } from '../piece';
 import { PieceType, Player, Position, Move } from '../types';
-import { IBoard } from '../interface';
 
 /**
  * 金クラス

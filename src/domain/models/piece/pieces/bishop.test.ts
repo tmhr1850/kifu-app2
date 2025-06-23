@@ -1,6 +1,6 @@
 import { Bishop } from './bishop';
-import { PieceType, Player, Position } from '../types';
 import { IBoard, IPiece } from '../interface';
+import { PieceType, Player, Position } from '../types';
 
 // モックボードの作成
 class MockBoard implements IBoard {

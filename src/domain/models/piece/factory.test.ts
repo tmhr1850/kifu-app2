@@ -1,5 +1,4 @@
 import { createPiece } from './factory';
-import { PieceType, Player, Position } from './types';
 import {
   King,
   Rook,
@@ -16,6 +15,7 @@ import {
   PromotedLance,
   Tokin,
 } from './pieces';
+import { PieceType, Player, Position } from './types';
 
 describe('createPiece ファクトリ関数', () => {
   const position: Position = { row: 5, column: 5 };
