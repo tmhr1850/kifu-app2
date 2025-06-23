@@ -19,7 +19,7 @@ export class GameRules {
    * @returns 合法手の配列
    */
   public generateLegalMoves(board: IBoard, player: Player): Move[] {
-    const allPossibleMoves: Move[] = [];
+    const legalMoves: Move[] = [];
     const pieces = board.getPieces(player);
 
     for (const piece of pieces) {
@@ -31,41 +31,28 @@ export class GameRules {
       for (const to of validDestinations) {
         // 成りのロジック
         const canPromote = this.canPromote(piece, to, from);
+        const mustPromote = this.mustPromote(piece, to);
 
-        // 強制成りの判定
-        const isPawnOrLance =
-          piece.type === PieceType.PAWN || piece.type === PieceType.LANCE;
-        const isKnight = piece.type === PieceType.KNIGHT;
-        const lastRow = player === Player.SENTE ? 0 : 8;
-        const secondToLastRow = player === Player.SENTE ? 1 : 7;
-
-        let forcePromote = false;
-        if (isPawnOrLance && to.row === lastRow) {
-          forcePromote = true;
-        }
-        if (
-          isKnight &&
-          (to.row === lastRow || to.row === secondToLastRow)
-        ) {
-          forcePromote = true;
-        }
-
-        if (forcePromote) {
-          allPossibleMoves.push({ from, to, isPromotion: true });
+        const promotionMoves: (boolean | undefined)[] = [];
+        if (mustPromote) {
+          promotionMoves.push(true);
         } else if (canPromote) {
-          allPossibleMoves.push({ from, to, isPromotion: true });
-          allPossibleMoves.push({ from, to, isPromotion: false });
+          promotionMoves.push(true, false);
         } else {
-          allPossibleMoves.push({ from, to, isPromotion: false });
+          promotionMoves.push(false);
+        }
+
+        for (const isPromotion of promotionMoves) {
+          const move: Move = { from, to, isPromotion };
+          const testBoard = board.applyMove(move);
+          if (!this.isInCheck(testBoard, player)) {
+            legalMoves.push(move);
+          }
         }
       }
     }
 
-    // 王手になる手（反則手）を除外する
-    return allPossibleMoves.filter(move => {
-      const testBoard = board.applyMove(move);
-      return !this.isInCheck(testBoard, player);
-    });
+    return legalMoves;
   }
 
   /**
@@ -136,35 +123,52 @@ export class GameRules {
    * @returns {boolean} - 成れる場合はtrue、そうでない場合はfalse
    */
   private canPromote(piece: IPiece, to: Position, from: Position): boolean {
-    if (piece.type === PieceType.KING || piece.type === PieceType.GOLD) {
+    const unpromotablePieces: PieceType[] = [
+      PieceType.GOLD,
+      PieceType.KING,
+      PieceType.TOKIN,
+      PieceType.PROMOTED_SILVER,
+      PieceType.PROMOTED_KNIGHT,
+      PieceType.PROMOTED_LANCE,
+      PieceType.HORSE,
+      PieceType.DRAGON,
+    ];
+
+    if (unpromotablePieces.includes(piece.type)) {
       return false;
     }
 
     const player = piece.player;
-    const promotionZoneStart = player === Player.SENTE ? 1 : 7;
-    const promotionZoneEnd = player === Player.SENTE ? 3 : 9;
+    const promotionZoneStart = player === Player.SENTE ? 0 : 6;
+    const promotionZoneEnd = player === Player.SENTE ? 2 : 8;
 
     const isMovingToPromotionZone =
       to.row >= promotionZoneStart && to.row <= promotionZoneEnd;
     const isMovingFromPromotionZone =
       from.row >= promotionZoneStart && from.row <= promotionZoneEnd;
 
-    if (isMovingToPromotionZone || isMovingFromPromotionZone) {
-      // 特定の駒は特定の段で強制的に成る
-      if (
-        (piece.type === PieceType.PAWN || piece.type === PieceType.LANCE) &&
-        to.row === (player === Player.SENTE ? 1 : 9)
-      ) {
-        return true;
-      }
-      if (
-        piece.type === PieceType.KNIGHT &&
-        to.row <= (player === Player.SENTE ? 2 : 8)
-      ) {
-        return true;
-      }
-      return true;
+    return isMovingToPromotionZone || isMovingFromPromotionZone;
+  }
+
+  /**
+   * 駒が強制的に成らなければならないかを判定します。
+   * @param {IPiece} piece - 判定対象の駒
+   * @param {Position} to - 移動先の位置
+   * @returns {boolean} - 強制的に成る場合はtrue、そうでない場合はfalse
+   */
+  private mustPromote(piece: IPiece, to: Position): boolean {
+    const player = piece.player;
+
+    if (piece.type === PieceType.PAWN || piece.type === PieceType.LANCE) {
+      const lastRank = player === Player.SENTE ? 0 : 8;
+      return to.row === lastRank;
     }
+
+    if (piece.type === PieceType.KNIGHT) {
+      const lastRanks = player === Player.SENTE ? [0, 1] : [7, 8];
+      return lastRanks.includes(to.row);
+    }
+
     return false;
   }
 
