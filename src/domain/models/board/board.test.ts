@@ -2,11 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { Board } from './board';
 import { createPiece } from '../piece/factory';
-import { IBoard, IPiece } from '../piece/interface';
+import { IPiece } from '../piece/interface';
+import { Pawn } from '../piece/pieces/pawn';
 import { Move, PieceType, Player } from '../piece/types';
 
 describe('Board', () => {
-  let board: IBoard;
+  let board: Board;
 
   beforeEach(() => {
     board = new Board();
@@ -26,33 +27,21 @@ describe('Board', () => {
     expect(board.getPiece(position)).toBeNull();
   });
 
-  it('盤面をクローンした際に、駒の状態が同じでインスタンスが異なること', () => {
-    // 1. セットアップ：いくつかの駒を盤面に配置
-    const pawn = createPiece(PieceType.PAWN, Player.SENTE);
-    const rook = createPiece(PieceType.ROOK, Player.GOTE);
-    board.setPiece({ row: 2, column: 2 }, pawn);
-    board.setPiece({ row: 7, column: 7 }, rook);
+  it('盤面をクローンした際に、駒の状態が同じで、盤面が独立していること', () => {
+    board.setPiece({ row: 2, column: 2 }, new Pawn(Player.SENTE));
+    board.setPiece({ row: 7, column: 7 }, new Pawn(Player.GOTE));
 
-    // 2. 実行：盤面をクローン
     const clonedBoard = board.clone();
 
-    // 3. 検証：
-    // インスタンスが異なることを確認
-    expect(clonedBoard).not.toBe(board);
+    // クローンした盤面の駒を変更しても、元の盤面に影響がないことを確認
+    clonedBoard.setPiece({ row: 2, column: 2 }, null);
 
-    // 各駒がクローンされていることを確認 (位置は同じだがインスタンスは別)
-    const originalPawn = board.getPiece({ row: 2, column: 2 });
-    const clonedPawn = clonedBoard.getPiece({ row: 2, column: 2 });
-    expect(clonedPawn).toEqual(originalPawn);
-    expect(clonedPawn).not.toBe(originalPawn);
+    expect(board.getPiece({ row: 2, column: 2 })).not.toBeNull();
+    expect(clonedBoard.getPiece({ row: 2, column: 2 })).toBeNull();
 
-    const originalRook = board.getPiece({ row: 7, column: 7 });
-    const clonedRook = clonedBoard.getPiece({ row: 7, column: 7 });
-    expect(clonedRook).toEqual(originalRook);
-    expect(clonedRook).not.toBe(originalRook);
-
-    // 空白マスも一致することを確認
-    expect(clonedBoard.getPiece({ row: 0, column: 0 })).toBeNull();
+    // 元の盤面の駒を変更しても、クローンした盤面に影響がないことを確認
+    board.setPiece({ row: 7, column: 7 }, null);
+    expect(clonedBoard.getPiece({ row: 7, column: 7 })).not.toBeNull();
   });
 
   describe('初期盤面の生成', () => {

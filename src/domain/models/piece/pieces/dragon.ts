@@ -24,15 +24,14 @@ export class Dragon extends Piece {
     const moveSet = new Map<string, Position>();
 
     // 飛車の動き
-    const rookMoves = new Rook(this.player, this.position).getValidMoves(board);
+    const rookMoves = Rook.getRookMoves(this.position, this.player, board);
     for (const pos of rookMoves) {
       const key = `${pos.row},${pos.column}`;
       moveSet.set(key, pos);
     }
 
-    // 王の動きの一部（斜め）
-    const king = new King(this.player, this.position);
-    const kingAllMoves = king.getValidMoves(board);
+    // 王の動き（斜め方向のみ）
+    const kingAllMoves = King.getKingMoves(this.position, this.player, board);
     const kingDiagonalMoves = kingAllMoves.filter(pos => {
       return (
         Math.abs(pos.row - this.position!.row) === 1 &&
