@@ -34,3 +34,23 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## 🛠️ 開発環境セットアップ
+
+### Git リポジトリ設定
+
+新規プロジェクトで Git リポジトリを設定する場合は、以下のガイドを参照してください：
+
+- **[Git 設定ガイド](docs/git-setup-guide.md)** - 手動設定の詳細手順
+- **自動セットアップスクリプト** - ワンコマンドでセットアップ
+
+```bash
+# 自動セットアップの使用例
+./scripts/git-setup.sh https://github.com/username/repository.git "Initial commit"
+```
+
+### 推奨開発ツール
+
+- [Cursor](https://cursor.sh/) - AI 統合エディタ
+- [GitHub Desktop](https://desktop.github.com/) - Git GUI
+- [Vercel CLI](https://vercel.com/cli) - デプロイメント
