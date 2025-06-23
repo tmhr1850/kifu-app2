@@ -91,7 +91,7 @@ describe('Silver（銀）', () => {
       board.setPieceAt({ row: 1, column: 1 }, silver);
 
       const moves = silver.getValidMoves(board);
-      expect(moves).toHaveLength(2); // 下と右下のみ
+      expect(moves).toHaveLength(1); // 右斜め前(2,2)のみ
     });
 
     it('持ち駒の場合は移動できない', () => {
