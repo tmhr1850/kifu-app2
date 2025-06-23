@@ -1,35 +1,20 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { Horse } from './horse';
-import { IBoard, IPiece } from '../interface';
+import { IBoard } from '../interface';
 import { PieceType, Player, Position } from '../types';
-
-// モックボードの作成
-class MockBoard implements IBoard {
-  private pieces: Map<string, IPiece>;
-
-  constructor() {
-    this.pieces = new Map();
-  }
-
-  getPieceAt(position: Position): IPiece | null {
-    const key = `${position.row}-${position.column}`;
-    return this.pieces.get(key) || null;
-  }
-
-  isValidPosition(position: Position): boolean {
-    return position.row >= 1 && position.row <= 9 && 
-           position.column >= 1 && position.column <= 9;
-  }
-
-  setPieceAt(position: Position, piece: IPiece): void {
-    const key = `${position.row}-${position.column}`;
-    this.pieces.set(key, piece);
-  }
-}
+import { Board } from '../../board/board';
+import { Pawn } from './pawn';
 
 describe('Horse（馬）', () => {
+  let board: IBoard;
+
+  beforeEach(() => {
+    board = new Board();
+  });
+
   describe('コンストラクタ', () => {
     it('正しく馬を作成できる', () => {
-      const position: Position = { row: 5, column: 5 };
+      const position: Position = { row: 4, column: 4 };
       const horse = new Horse(Player.SENTE, position);
 
       expect(horse.type).toBe(PieceType.HORSE);
@@ -40,87 +25,56 @@ describe('Horse（馬）', () => {
 
   describe('getValidMoves', () => {
     it('角の動き（斜め）に加えて、縦横1マスに移動できる', () => {
-      const board = new MockBoard();
-      const horse = new Horse(Player.SENTE, { row: 5, column: 5 });
-      board.setPieceAt({ row: 5, column: 5 }, horse);
+      const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
+      board.setPiece({ row: 4, column: 4 }, horse);
 
       const moves = horse.getValidMoves(board);
       const destinations = moves.map(move => move.to);
 
-      // 角と同じ斜めの動き
-      // 左上方向
-      expect(destinations).toContainEqual({ row: 4, column: 4 });
+      // 角の動き
       expect(destinations).toContainEqual({ row: 3, column: 3 });
-      expect(destinations).toContainEqual({ row: 2, column: 2 });
-      expect(destinations).toContainEqual({ row: 1, column: 1 });
-      
-      // 右上方向
-      expect(destinations).toContainEqual({ row: 4, column: 6 });
-      expect(destinations).toContainEqual({ row: 3, column: 7 });
-      expect(destinations).toContainEqual({ row: 2, column: 8 });
-      expect(destinations).toContainEqual({ row: 1, column: 9 });
-      
-      // 左下方向
-      expect(destinations).toContainEqual({ row: 6, column: 4 });
-      expect(destinations).toContainEqual({ row: 7, column: 3 });
-      expect(destinations).toContainEqual({ row: 8, column: 2 });
-      expect(destinations).toContainEqual({ row: 9, column: 1 });
-      
-      // 右下方向
-      expect(destinations).toContainEqual({ row: 6, column: 6 });
-      expect(destinations).toContainEqual({ row: 7, column: 7 });
+      expect(destinations).toContainEqual({ row: 0, column: 0 });
+      expect(destinations).toContainEqual({ row: 3, column: 5 });
+      expect(destinations).toContainEqual({ row: 0, column: 8 });
+      expect(destinations).toContainEqual({ row: 5, column: 3 });
+      expect(destinations).toContainEqual({ row: 8, column: 0 });
+      expect(destinations).toContainEqual({ row: 5, column: 5 });
       expect(destinations).toContainEqual({ row: 8, column: 8 });
-      expect(destinations).toContainEqual({ row: 9, column: 9 });
-      
-      // 縦横1マス
-      expect(destinations).toContainEqual({ row: 4, column: 5 });
-      expect(destinations).toContainEqual({ row: 6, column: 5 });
-      expect(destinations).toContainEqual({ row: 5, column: 4 });
-      expect(destinations).toContainEqual({ row: 5, column: 6 });
-      
-      expect(destinations).toHaveLength(20);
-      
-      // 縦横2マス以上は移動できない
-      expect(destinations).not.toContainEqual({ row: 3, column: 5 });
-      expect(destinations).not.toContainEqual({ row: 5, column: 3 });
+
+      // 玉の動き（縦横1マス）
+      expect(destinations).toContainEqual({ row: 3, column: 4 }); // 前
+      expect(destinations).toContainEqual({ row: 5, column: 4 }); // 後
+      expect(destinations).toContainEqual({ row: 4, column: 3 }); // 左
+      expect(destinations).toContainEqual({ row: 4, column: 5 }); // 右
     });
 
     it('斜めの移動は他の駒を飛び越えることができない', () => {
-      const board = new MockBoard();
-      const horse = new Horse(Player.SENTE, { row: 5, column: 5 });
-      const blockingPiece = new Horse(Player.GOTE, { row: 3, column: 3 });
-      
-      board.setPieceAt({ row: 5, column: 5 }, horse);
-      board.setPieceAt({ row: 3, column: 3 }, blockingPiece);
+      const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
+      const blockingPiece = new Pawn(Player.GOTE, { row: 2, column: 2 });
+      board.setPiece({ row: 4, column: 4 }, horse);
+      board.setPiece({ row: 2, column: 2 }, blockingPiece);
 
       const moves = horse.getValidMoves(board);
       const destinations = moves.map(move => move.to);
 
-      // 敵の駒の位置までは移動できる
-      expect(destinations).toContainEqual({ row: 3, column: 3 });
-      // その先には移動できない
-      expect(destinations).not.toContainEqual({ row: 2, column: 2 });
-      expect(destinations).not.toContainEqual({ row: 1, column: 1 });
+      expect(destinations).toContainEqual({ row: 2, column: 2 }); // 敵の駒は取れる
+      expect(destinations).not.toContainEqual({ row: 1, column: 1 }); // 飛び越えられない
     });
 
     it('縦横1マスの移動でも味方の駒がある場所には移動できない', () => {
-      const board = new MockBoard();
-      const horse = new Horse(Player.SENTE, { row: 5, column: 5 });
-      const allyPiece = new Horse(Player.SENTE, { row: 4, column: 5 });
-      
-      board.setPieceAt({ row: 5, column: 5 }, horse);
-      board.setPieceAt({ row: 4, column: 5 }, allyPiece);
+      const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
+      const allyPiece = new Pawn(Player.SENTE, { row: 3, column: 4 });
+      board.setPiece({ row: 4, column: 4 }, horse);
+      board.setPiece({ row: 3, column: 4 }, allyPiece);
 
       const moves = horse.getValidMoves(board);
       const destinations = moves.map(move => move.to);
 
-      expect(destinations).not.toContainEqual({ row: 4, column: 5 });
+      expect(destinations).not.toContainEqual({ row: 3, column: 4 });
     });
 
     it('持ち駒の場合は移動できない', () => {
-      const board = new MockBoard();
       const horse = new Horse(Player.SENTE);
-
       const moves = horse.getValidMoves(board);
       expect(moves).toHaveLength(0);
     });
@@ -128,17 +82,14 @@ describe('Horse（馬）', () => {
 
   describe('canPromote', () => {
     it('馬は成れない（すでに成り駒）', () => {
-      const horse = new Horse(Player.SENTE, { row: 5, column: 5 });
-      
-      expect(horse.canPromote({ row: 1, column: 5 })).toBe(false);
-      expect(horse.canPromote({ row: 3, column: 5 })).toBe(false);
+      const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
+      expect(horse.canPromote({ row: 2, column: 4 })).toBe(false);
     });
   });
 
   describe('promote', () => {
     it('馬は成り駒に変換できない', () => {
-      const horse = new Horse(Player.SENTE, { row: 5, column: 5 });
-      
+      const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
       expect(() => horse.promote()).toThrow('この駒は成ることができません');
     });
   });

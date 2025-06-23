@@ -121,10 +121,14 @@ export class Board implements IBoard {
     // 移動元を空にする
     newBoard.setPiece(move.from, null);
 
-    // TODO: 成りの処理
-    // if (move.isPromotion) {
-    //   piece = piece.promote();
-    // }
+    // 成りの処理
+    if (move.isPromotion) {
+      const promotedPiece = movedPiece.promote();
+      if (promotedPiece) {
+        newBoard.setPiece(move.to, promotedPiece);
+        return newBoard;
+      }
+    }
 
     // 移動先に新しい駒を配置
     newBoard.setPiece(move.to, movedPiece);

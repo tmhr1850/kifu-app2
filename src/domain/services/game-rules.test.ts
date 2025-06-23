@@ -77,23 +77,33 @@ describe('GameRules', () => {
     expect(gameRules.isCheckmate(board, Player.SENTE)).toBe(false);
   });
 
-  it.skip('should detect checkmate', () => {
-    // ... checkmate setup ...
-    // expect(gameRules.isCheckmate(board, Player.SENTE)).toBe(true);
-  });
+  describe('isNifu (二歩)', () => {
+    it('同じ列に自分の「歩」がいる場合は二歩であること', () => {
+      // 5筋に先手の歩を配置
+      const pawnPos = { row: 6, column: 4 }; // 5七歩
+      board.setPiece(pawnPos, createPiece(PieceType.PAWN, Player.SENTE, pawnPos));
 
-  it.skip('should validate a legal move', () => {
-    // const move: Move = {
-    //   from: { row: 7, col: 7 },
-    //   to: { row: 6, col: 7 },
-    //   piece: board.getPiece({ row: 7, col: 7 })!
-    // };
-    // expect(gameRules.isValidMove(board, move)).toBe(true);
-  });
+      // 5筋に新たに歩を打つのは二歩
+      expect(gameRules.isNifu(board, 4, Player.SENTE)).toBe(true);
+    });
 
-  it.skip('should detect Nifu (two pawns in the same file)', () => {
-    // board.setPiece({ row: 4, col: 3 }, new Piece(PieceType.PAWN, Player.SENTE));
-    // expect(gameRules.isNifu(board, { row: 3, col: 3 }, Player.SENTE)).toBe(true);
+    it('同じ列にいるのが「と金」の場合は二歩ではないこと', () => {
+      // 5筋に先手のと金を配置
+      const tokinPos = { row: 2, column: 4 }; // 5三と
+      board.setPiece(tokinPos, createPiece(PieceType.TOKIN, Player.SENTE, tokinPos));
+
+      // 5筋に新たに歩を打っても二歩ではない
+      expect(gameRules.isNifu(board, 4, Player.SENTE)).toBe(false);
+    });
+
+    it('同じ列にいるのが相手の歩の場合は二歩ではないこと', () => {
+      // 5筋に後手の歩を配置
+      const pawnPos = { row: 2, column: 4 }; // 5三歩
+      board.setPiece(pawnPos, createPiece(PieceType.PAWN, Player.GOTE, pawnPos));
+      
+      // 先手は5筋に歩を打てる
+      expect(gameRules.isNifu(board, 4, Player.SENTE)).toBe(false);
+    });
   });
 
   describe('generateLegalMoves', () => {
@@ -108,146 +118,120 @@ describe('GameRules', () => {
     });
 
     it('should generate promotion moves when pawn reaches promotion zone', () => {
-      // const pawn = new Piece(PieceType.PAWN, Player.SENTE);
-      // board.setPiece({ row: 4, col: 5 }, pawn);
+      const pawn = createPiece(PieceType.PAWN, Player.SENTE, { row: 3, column: 5 });
+      board.setPiece({ row: 3, column: 5 }, pawn); // 4六歩
 
-      // const moves = gameRules.generateLegalMoves(board, Player.SENTE);
+      const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      // expect(moves.length).toBe(2); // With and without promotion
-      // expect(moves.some(m => m.promotesTo === true)).toBe(true);
-      // expect(moves.some(m => !m.promotesTo)).toBe(true);
+      // 4五へ進む手は「成」「不成」の2通り
+      const targetMoves = moves.filter(m => m.to.row === 2 && m.to.column === 5);
+      expect(targetMoves.length).toBe(2);
+      expect(targetMoves.some(m => m.isPromotion)).toBe(true);
+      expect(targetMoves.some(m => !m.isPromotion)).toBe(true);
     });
 
     it('should force promotion when pawn reaches last row', () => {
-      // const pawn = new Piece(PieceType.PAWN, Player.SENTE);
-      // board.setPiece({ row: 2, col: 5 }, pawn);
+      const pawn = createPiece(PieceType.PAWN, Player.SENTE, { row: 1, column: 5 });
+      board.setPiece({ row: 1, column: 5 }, pawn); // 2六歩
 
-      // const moves = gameRules.generateLegalMoves(board, Player.SENTE);
+      const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      // expect(moves.length).toBe(1);
-      // expect(moves[0].promotesTo).toBe(true);
+      const targetMoves = moves.filter(m => m.to.row === 0 && m.to.column === 5);
+      expect(targetMoves.length).toBe(1);
+      expect(targetMoves[0].isPromotion).toBe(true);
     });
 
     it('should generate sliding moves for rook', () => {
-      // const rook = new Piece(PieceType.ROOK, Player.SENTE);
-      // board.setPiece({ row: 5, col: 5 }, rook);
+      const rook = createPiece(PieceType.ROOK, Player.SENTE, { row: 4, column: 4 });
+      board.setPiece({ row: 4, column: 4 }, rook);
 
-      // const moves = gameRules.generateLegalMoves(board, Player.SENTE);
+      const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      // 4 directions × 8 squares max = up to 32 moves
-      // But limited by board boundaries
-      // expect(moves.length).toBe(16); // 4+4+4+4
+      // 盤の中央(4,4)にいる飛車の移動範囲は、縦(8) + 横(8) = 16マス
+      expect(moves.length).toBe(16);
     });
 
     it('should stop sliding moves at friendly pieces', () => {
-      // const rook = new Piece(PieceType.ROOK, Player.SENTE);
-      // const pawn = new Piece(PieceType.PAWN, Player.SENTE);
-      // board.setPiece({ row: 5, col: 5 }, rook);
-      // board.setPiece({ row: 5, col: 7 }, pawn);
+      const rook = createPiece(PieceType.ROOK, Player.SENTE, { row: 4, column: 4 });
+      const pawn = createPiece(PieceType.PAWN, Player.SENTE, { row: 4, column: 6 });
+      board.setPiece({ row: 4, column: 4 }, rook);
+      board.setPiece({ row: 4, column: 6 }, pawn); // 右に2マスの位置に味方の歩
 
-      // const moves = gameRules.generateLegalMoves(board, Player.SENTE);
+      const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      // Right direction is blocked at col 7
-      // const rightMoves = moves.filter(m => m.from?.row === 5 && m.to.col > 5);
-      // expect(rightMoves.length).toBe(1); // Only to col 6
+      const rightMoves = moves.filter(m => m.from.row === 4 && m.to.column > 4);
+      // (4, 5)への1マスのみ
+      expect(rightMoves.length).toBe(1);
+      expect(rightMoves[0].to).toEqual({ row: 4, column: 5 });
     });
 
     it('should allow capturing enemy pieces', () => {
-      // const rook = new Piece(PieceType.ROOK, Player.SENTE);
-      // const enemyPawn = new Piece(PieceType.PAWN, Player.GOTE);
-      // board.setPiece({ row: 5, col: 5 }, rook);
-      // board.setPiece({ row: 5, col: 7 }, enemyPawn);
+      const rook = createPiece(PieceType.ROOK, Player.SENTE, { row: 4, column: 4 });
+      const enemyPawn = createPiece(PieceType.PAWN, Player.GOTE, { row: 4, column: 6 });
+      board.setPiece({ row: 4, column: 4 }, rook);
+      board.setPiece({ row: 4, column: 6 }, enemyPawn); // 右に2マスの位置に敵の歩
 
-      // const moves = gameRules.generateLegalMoves(board, Player.SENTE);
+      const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      // Can capture at col 7 but not beyond
-      // const rightMoves = moves.filter(m => m.from?.row === 5 && m.to.col > 5);
-      // expect(rightMoves.length).toBe(2); // To col 6 and 7
-      // expect(rightMoves.some(m => m.to.col === 7)).toBe(true);
+      const rightMoves = moves.filter(m => m.from.row === 4 && m.to.column > 4);
+      // (4,5)と、敵の駒を取る(4,6)への2マス
+      expect(rightMoves.length).toBe(2);
+      expect(rightMoves.some(m => m.to.column === 5)).toBe(true);
+      expect(rightMoves.some(m => m.to.column === 6)).toBe(true);
     });
 
     it('should generate L-shaped moves for knight', () => {
-      // const knight = new Piece(PieceType.KNIGHT, Player.SENTE);
-      // board.setPiece({ row: 5, col: 5 }, knight);
+      const knight = createPiece(PieceType.KNIGHT, Player.SENTE, { row: 8, column: 7 });
+      board.setPiece({ row: 8, column: 7 }, knight); // 初期配置の桂馬
 
-      // const moves = gameRules.generateLegalMoves(board, Player.SENTE);
+      const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      // expect(moves.length).toBe(2); // Two possible knight moves forward
-      // expect(moves.every(m => m.to.row === 3)).toBe(true);
+      expect(moves.length).toBe(2);
+      // (6,6)と(6,8)に移動できる
+      expect(moves.some(m => m.to.row === 6 && m.to.column === 6)).toBe(true);
+      expect(moves.some(m => m.to.row === 6 && m.to.column === 8)).toBe(true);
     });
 
     it('should force knight promotion in last two rows', () => {
-      // const knight = new Piece(PieceType.KNIGHT, Player.SENTE);
-      // board.setPiece({ row: 4, col: 5 }, knight);
+      // 3七桂馬
+      const knight = createPiece(PieceType.KNIGHT, Player.SENTE, { row: 3, column: 6 });
+      board.setPiece({ row: 3, column: 6 }, knight);
 
-      // const moves = gameRules.generateLegalMoves(board, Player.SENTE);
+      const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      // Moves to row 2 must promote
-      // const forcedPromotions = moves.filter(m => m.to.row === 2);
-      // expect(forcedPromotions.every(m => m.promotesTo === true)).toBe(true);
+      // (1,5)と(1,7)への移動は強制的に成り
+      const targetMoves = moves.filter(m => m.from.row === 3 && m.from.column === 6);
+      expect(targetMoves.length).toBe(2);
+      expect(targetMoves.every(m => m.isPromotion)).toBe(true);
     });
 
     it('should filter out moves that leave king in check', () => {
-      // const king = new Piece(PieceType.KING, Player.SENTE);
-      // const protectingRook = new Piece(PieceType.ROOK, Player.SENTE);
-      // const enemyRook = new Piece(PieceType.ROOK, Player.GOTE);
+      const king = createPiece(PieceType.KING, Player.SENTE, { row: 8, column: 4 });
+      const protectingRook = createPiece(PieceType.ROOK, Player.SENTE, { row: 7, column: 4 });
+      const enemyRook = createPiece(PieceType.ROOK, Player.GOTE, { row: 0, column: 4 });
       
-      // board.setPiece({ row: 5, col: 5 }, king);
-      // board.setPiece({ row: 5, col: 4 }, protectingRook); // Blocking enemy rook
-      // board.setPiece({ row: 5, col: 1 }, enemyRook);
+      board.setPiece({ row: 8, column: 4 }, king);
+      board.setPiece({ row: 7, column: 4 }, protectingRook); // 王を守る飛車
+      board.setPiece({ row: 0, column: 4 }, enemyRook); // 敵の飛車
 
-      // const moves = gameRules.generateLegalMoves(board, Player.SENTE);
+      const moves = gameRules.generateLegalMoves(board, Player.SENTE);
       
-      // The protecting rook cannot move horizontally
-      // const protectingRookMoves = moves.filter(m => 
-      //   m.from?.row === 5 && m.from?.col === 4 && m.to.row === 5
-      // );
-      // expect(protectingRookMoves.length).toBe(0);
+      const protectingRookMoves = moves.filter(m => 
+        m.from.row === 7 && m.from.column === 4
+      );
+      
+      // 守っている飛車は、王の直線から外れる横方向には動けない
+      const horizontalMoves = protectingRookMoves.filter(m => m.to.row === 7);
+      expect(horizontalMoves.length).toBe(0);
+
+      // 縦方向には動ける（王手から逃れる or 敵の飛車を取る）
+      const verticalMoves = protectingRookMoves.filter(m => m.to.column === 4);
+      expect(verticalMoves.length).toBeGreaterThan(0);
     });
   });
 
   describe('isInCheck', () => {
-    it('should detect check from enemy rook', () => {
-      // const king = new Piece(PieceType.KING, Player.SENTE);
-      // const enemyRook = new Piece(PieceType.ROOK, Player.GOTE);
-      
-      // board.setPiece({ row: 5, col: 5 }, king);
-      // board.setPiece({ row: 5, col: 1 }, enemyRook);
-
-      // expect(gameRules.isInCheck(board, Player.SENTE)).toBe(true);
-    });
-
-    it('should not detect check when blocked by friendly piece', () => {
-      // const king = new Piece(PieceType.KING, Player.SENTE);
-      // const protectingPawn = new Piece(PieceType.PAWN, Player.SENTE);
-      // const enemyRook = new Piece(PieceType.ROOK, Player.GOTE);
-      
-      // board.setPiece({ row: 5, col: 5 }, king);
-      // board.setPiece({ row: 5, col: 3 }, protectingPawn);
-      // board.setPiece({ row: 5, col: 1 }, enemyRook);
-
-      // expect(gameRules.isInCheck(board, Player.SENTE)).toBe(false);
-    });
-
-    it('should detect check from enemy bishop diagonal', () => {
-      // const king = new Piece(PieceType.KING, Player.SENTE);
-      // const enemyBishop = new Piece(PieceType.BISHOP, Player.GOTE);
-      
-      // board.setPiece({ row: 5, col: 5 }, king);
-      // board.setPiece({ row: 2, col: 2 }, enemyBishop);
-
-      // expect(gameRules.isInCheck(board, Player.SENTE)).toBe(true);
-    });
-
-    it('should detect check from promoted bishop adjacent square', () => {
-      // const king = new Piece(PieceType.KING, Player.SENTE);
-      // const enemyBishop = new Piece(PieceType.BISHOP, Player.GOTE, true);
-      
-      // board.setPiece({ row: 5, col: 5 }, king);
-      // board.setPiece({ row: 5, col: 6 }, enemyBishop);
-
-      // expect(gameRules.isInCheck(board, Player.SENTE)).toBe(true);
-    });
+    // これらのテストはすでにit('王手を正しく検知できること')などでカバーされているため削除
   });
 
   describe('isCheckmate', () => {

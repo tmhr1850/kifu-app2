@@ -1,32 +1,18 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { Bishop } from './bishop';
 import { IBoard, IPiece } from '../interface';
 import { PieceType, Player, Position } from '../types';
-
-// モックボードの作成
-class MockBoard implements IBoard {
-  private pieces: Map<string, IPiece>;
-
-  constructor() {
-    this.pieces = new Map();
-  }
-
-  getPieceAt(position: Position): IPiece | null {
-    const key = `${position.row}-${position.column}`;
-    return this.pieces.get(key) || null;
-  }
-
-  isValidPosition(position: Position): boolean {
-    return position.row >= 1 && position.row <= 9 && 
-           position.column >= 1 && position.column <= 9;
-  }
-
-  setPieceAt(position: Position, piece: IPiece): void {
-    const key = `${position.row}-${position.column}`;
-    this.pieces.set(key, piece);
-  }
-}
+import { Board } from '../../board/board'; // Boardの実装をインポート
 
 describe('Bishop（角）', () => {
+  let board: IBoard;
+  let bishop: Bishop;
+
+  beforeEach(() => {
+    // 各テストの前に新しいBoardインスタンスを作成
+    board = new Board();
+  });
+
   describe('コンストラクタ', () => {
     it('正しく角を作成できる', () => {
       const position: Position = { row: 5, column: 5 };
@@ -40,38 +26,37 @@ describe('Bishop（角）', () => {
 
   describe('getValidMoves', () => {
     it('斜めに自由に移動できる', () => {
-      const board = new MockBoard();
-      const bishop = new Bishop(Player.SENTE, { row: 5, column: 5 });
-      board.setPieceAt({ row: 5, column: 5 }, bishop);
+      const bishop = new Bishop(Player.SENTE, { row: 4, column: 4 }); // 5五
+      board.setPiece({ row: 4, column: 4 }, bishop);
 
       const moves = bishop.getValidMoves(board);
       const destinations = moves.map(move => move.to);
 
-      // 左上方向
-      expect(destinations).toContainEqual({ row: 4, column: 4 });
+      // 左上方向 (0,0)まで
       expect(destinations).toContainEqual({ row: 3, column: 3 });
       expect(destinations).toContainEqual({ row: 2, column: 2 });
       expect(destinations).toContainEqual({ row: 1, column: 1 });
+      expect(destinations).toContainEqual({ row: 0, column: 0 });
       
-      // 右上方向
-      expect(destinations).toContainEqual({ row: 4, column: 6 });
-      expect(destinations).toContainEqual({ row: 3, column: 7 });
-      expect(destinations).toContainEqual({ row: 2, column: 8 });
-      expect(destinations).toContainEqual({ row: 1, column: 9 });
+      // 右上方向 (0,8)まで
+      expect(destinations).toContainEqual({ row: 3, column: 5 });
+      expect(destinations).toContainEqual({ row: 2, column: 6 });
+      expect(destinations).toContainEqual({ row: 1, column: 7 });
+      expect(destinations).toContainEqual({ row: 0, column: 8 });
       
-      // 左下方向
-      expect(destinations).toContainEqual({ row: 6, column: 4 });
-      expect(destinations).toContainEqual({ row: 7, column: 3 });
-      expect(destinations).toContainEqual({ row: 8, column: 2 });
-      expect(destinations).toContainEqual({ row: 9, column: 1 });
+      // 左下方向 (8,0)まで
+      expect(destinations).toContainEqual({ row: 5, column: 3 });
+      expect(destinations).toContainEqual({ row: 6, column: 2 });
+      expect(destinations).toContainEqual({ row: 7, column: 1 });
+      expect(destinations).toContainEqual({ row: 8, column: 0 });
       
-      // 右下方向
+      // 右下方向 (8,8)まで
+      expect(destinations).toContainEqual({ row: 5, column: 5 });
       expect(destinations).toContainEqual({ row: 6, column: 6 });
       expect(destinations).toContainEqual({ row: 7, column: 7 });
       expect(destinations).toContainEqual({ row: 8, column: 8 });
-      expect(destinations).toContainEqual({ row: 9, column: 9 });
       
-      expect(destinations).toHaveLength(16);
+      expect(destinations).toHaveLength(13 + 4 - 4); // 5五からは最大13マス
       
       // 縦横には移動できない
       expect(destinations).not.toContainEqual({ row: 4, column: 5 });
@@ -79,45 +64,42 @@ describe('Bishop（角）', () => {
     });
 
     it('他の駒を飛び越えることはできない', () => {
-      const board = new MockBoard();
-      const bishop = new Bishop(Player.SENTE, { row: 5, column: 5 });
-      const blockingPiece = new Bishop(Player.GOTE, { row: 3, column: 3 });
+      const bishop = new Bishop(Player.SENTE, { row: 4, column: 4 }); // 5五
+      const blockingPiece = new Bishop(Player.GOTE, { row: 2, column: 2 }); // 3三
       
-      board.setPieceAt({ row: 5, column: 5 }, bishop);
-      board.setPieceAt({ row: 3, column: 3 }, blockingPiece);
+      board.setPiece({ row: 4, column: 4 }, bishop);
+      board.setPiece({ row: 2, column: 2 }, blockingPiece);
 
       const moves = bishop.getValidMoves(board);
       const destinations = moves.map(move => move.to);
 
       // 敵の駒の位置までは移動できる
-      expect(destinations).toContainEqual({ row: 3, column: 3 });
+      expect(destinations).toContainEqual({ row: 2, column: 2 });
       // その先には移動できない
-      expect(destinations).not.toContainEqual({ row: 2, column: 2 });
       expect(destinations).not.toContainEqual({ row: 1, column: 1 });
+      expect(destinations).not.toContainEqual({ row: 0, column: 0 });
     });
 
     it('味方の駒の手前までしか移動できない', () => {
-      const board = new MockBoard();
-      const bishop = new Bishop(Player.SENTE, { row: 5, column: 5 });
-      const allyPiece = new Bishop(Player.SENTE, { row: 3, column: 3 });
+      const bishop = new Bishop(Player.SENTE, { row: 4, column: 4 }); // 5五
+      const allyPiece = new Bishop(Player.SENTE, { row: 2, column: 2 }); // 3三
       
-      board.setPieceAt({ row: 5, column: 5 }, bishop);
-      board.setPieceAt({ row: 3, column: 3 }, allyPiece);
+      board.setPiece({ row: 4, column: 4 }, bishop);
+      board.setPiece({ row: 2, column: 2 }, allyPiece);
 
       const moves = bishop.getValidMoves(board);
       const destinations = moves.map(move => move.to);
 
       // 味方の駒の手前まで
-      expect(destinations).toContainEqual({ row: 4, column: 4 });
+      expect(destinations).toContainEqual({ row: 3, column: 3 });
       // 味方の駒の位置には移動できない
-      expect(destinations).not.toContainEqual({ row: 3, column: 3 });
-      // その先にも移動できない
       expect(destinations).not.toContainEqual({ row: 2, column: 2 });
+      // その先にも移動できない
+      expect(destinations).not.toContainEqual({ row: 1, column: 1 });
     });
 
     it('持ち駒の場合は移動できない', () => {
-      const board = new MockBoard();
-      const bishop = new Bishop(Player.SENTE);
+      const bishop = new Bishop(Player.SENTE); // 持ち駒
 
       const moves = bishop.getValidMoves(board);
       expect(moves).toHaveLength(0);

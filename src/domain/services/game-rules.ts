@@ -73,6 +73,27 @@ export class GameRules {
     return this.generateLegalMoves(board, player).length === 0;
   }
 
+  /**
+   * 指定された場所に歩を打つと二歩になるか判定する
+   * @param board - 現在の盤面
+   * @param column - 歩を打つ列
+   * @param player - 手番のプレイヤー
+   * @returns 二歩の場合 true
+   */
+  public isNifu(board: IBoard, column: number, player: Player): boolean {
+    for (let row = 0; row < 9; row++) {
+      const piece = board.getPiece({ row, column });
+      if (
+        piece &&
+        piece.player === player &&
+        piece.type === 'PAWN'
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Position比較用のヘルパーメソッド
   private positionsEqual(pos1: Position, pos2: Position): boolean {
     return pos1.row === pos2.row && pos1.column === pos2.column;
