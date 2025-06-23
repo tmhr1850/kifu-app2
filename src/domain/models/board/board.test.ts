@@ -139,5 +139,42 @@ describe('Board', () => {
       expect(movedPiece?.type).toBe(PieceType.PAWN);
       expect(newBoard.getPiece({ row: 6, column: 7 })).toBeNull();
     });
+
+    it('移動元に駒が存在しない場合はエラーをスローすること', () => {
+      // セットアップ
+      const board = Board.createInitialBoard();
+      const invalidMove: Move = {
+        from: { row: 4, column: 4 }, // 中央の空きマス
+        to: { row: 5, column: 4 },
+        isPromotion: false,
+      };
+
+      // 実行と検証
+      expect(() => board.applyMove(invalidMove)).toThrow(
+        '指定された位置(4, 4)に駒が存在しません'
+      );
+    });
+
+    it('成りの手を正しく適用できること', () => {
+      // セットアップ：歩を敵陣に配置
+      const board = new Board();
+      const pawn = createPiece(PieceType.PAWN, Player.SENTE);
+      board.setPiece({ row: 1, column: 0 }, pawn); // 敵陣近く
+
+      const promoteMove: Move = {
+        from: { row: 1, column: 0 },
+        to: { row: 0, column: 0 }, // 敵陣最奥へ
+        isPromotion: true,
+      };
+
+      // 実行
+      const newBoard = board.applyMove(promoteMove);
+
+      // 検証
+      const promotedPiece = newBoard.getPiece({ row: 0, column: 0 });
+      expect(promotedPiece).not.toBeNull();
+      expect(promotedPiece?.type).toBe(PieceType.PROMOTED_PAWN);
+      expect(newBoard.getPiece({ row: 1, column: 0 })).toBeNull();
+    });
   });
 }); 
