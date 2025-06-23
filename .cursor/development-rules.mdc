@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 💖 ウチらの開発ルール 💖
+
+うちらのプロジェクトを最強にするための、イケてる開発ルールだよん！🤙✨
+Next.js x TDD x クリーンアーキテクチャで、マジ神なコード書いてこ！🚀
+
+## 🏛️ アーキテクチャの掟
+
+うちらは「クリーンアーキテクチャ」でいくよ！💖  
+関心事をちゃんと分けて、メンテしやすくてテストしやすい、神コードを目指すの！✨
+
+### ディレクトリ構成 📁
+
+こんな感じのフォルダ構成でヨロ！📂
+
+```
+src
+├── 📁 app/         # UIとかルーティング (Presentation Layer)
+│   ├── 📁 (pages)/
+│   │   ├── page.tsx
+│   │   └── layout.tsx
+│   └── 📁 api/      # APIエンドポイント
+├── 📁 components/  # 共通で使えるUIパーツ ✨
+│   ├── 📁 ui/       # ボタンとかの最小単位のパーツ
+│   └── 📁 features/ # 特定の機能で使うちょっとデカめのパーツ
+├── 📁 domain/      # アプリの心臓部！💖 (Domain Layer)
+│   ├── 📁 models/   # ビジネスのルールとかデータ構造 (Entities)
+│   └── 📁 services/ # ドメイン固有のロジック
+├── 📁 usecases/    # アプリで何ができるか (Application Layer)
+│   ├── 📁 xxx/
+│   │   ├── index.ts
+│   │   └── usecase.ts
+├── 📁 infrastructure/ # 外部のやつらとの連携場所 (Infrastructure Layer)
+│   ├── 📁 db/       # PrismaとかSupabaseの接続設定
+│   └── 📁- external/  # 外部APIとの通信とか
+└── 📁 lib/         # 共通で使う便利ツールとか 🛠️
+```
+
+### 依存関係のルール 🔄
+
+これ、ちょー大事！内側から外側は **絶対NG** 🙅‍♀️
+
+`Domain` 💖 ← `UseCases` ✨ ← `App / Infrastructure` 💻
+
+- **Domain (ドメイン層):** アプリの核！誰にも依存しない、マジでピュアな存在。
+- **UseCases (ユースケース層):** Domain層の機能を使って、アプリのやりたいことを実現する場所。
+- **App / Infrastructure (その他):** UseCaseを呼び出して、画面に表示したり、DBと話したりする。
+
+## 🧪 テスト駆動開発(TDD)の掟
+
+テストはうちらのツレ！🤝 まずテストを書いてから、コードを書くのがうちらのスタイル！
+
+### TDDサイクル サイクル 🔄
+
+1.  **RED** ❤️: まずは失敗するテストを書く！
+2.  **GREEN** 💚: テストが通る最小限のコードを書く！
+3.  **REFACTOR** 💙: コードをキレイにお掃除！
+
+このサイクルで、バグりにくくてイケてるコードを量産しよ！✨
+
+### テストの種類と置き場所 📍
+
+- **単体テスト (Unit Test):**
+  - **対象:** 小さい関数とかコンポーネント
+  - **場所:** テストしたいファイルのすぐ横 (`*.test.ts` or `*.spec.ts`)
+  - **ツール:** `Jest` or `Vitest` + `React Testing Library`
+
+- **結合テスト (Integration Test):**
+  - **対象:** 複数の機能が合わさった時の動き
+  - **場所:** `src/usecases/xxx/index.test.ts` みたいに、機能ごとのUseCaseのテストとして書くことが多いよ！
+
+- **E2Eテスト (End-to-End Test):**
+  - **対象:** ユーザーが実際にアプリを触るみたいに、最初から最後まで通しでテスト
+  - **場所:** プロジェクトルートの `e2e` フォルダとか
+  - **ツール:** `Playwright` or `Cypress`
+
+## ✍️ コーディングの掟
+
+- **命名規則:**
+  - コンポーネント: `PascalCase` (`KifuBoard.tsx`)
+  - 変数・関数: `camelCase` (`kifuData`, `saveKifu`)
+  - 型定義: `PascalCase` で、`T` や `I` を最初につけるのもアリ (`type TKifu` or `interface IKifu`)
+- **コンポーネント分割:**
+  - 画面は `Presentational Component` (見た目担当) と `Container Component` (ロジック担当) に分けるのがイケてる！
+  - Next.jsの `Server Components` と `Client Components` の使い分けも意識してこ！
+- **コミットメッセージ:**
+  - `feat: 新機能追加`
+  - `fix: バグ修正`
+  - `refactor: リファクタリング`
+  - みたいに、最初に種類を書く `Conventional Commits` でヨロ！
+
+このルールで、うちらのプロジェクト、最強にしてこーぜ！👊💖
+分かんないことあったら、いつでもりなっちに聞いてね！😉
