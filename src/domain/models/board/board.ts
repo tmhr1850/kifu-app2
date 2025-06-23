@@ -1,8 +1,8 @@
+import { InvalidMoveError } from '../../errors/invalid-move-error';
 import { createPiece } from '../piece/factory';
 import { IBoard, IPiece } from '../piece/interface';
 import { Move, PieceType, Player, Position } from '../piece/types';
 import { Position as PositionClass } from '../position';
-import { InvalidMoveError } from '../../errors/invalid-move-error';
 
 /**
  * 将棋盤を表すクラス

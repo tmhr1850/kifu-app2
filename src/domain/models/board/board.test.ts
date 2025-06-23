@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { Board } from './board';
+import { InvalidMoveError } from '../../errors/invalid-move-error';
 import { createPiece } from '../piece/factory';
 import { IPiece } from '../piece/interface';
 import { Pawn } from '../piece/pieces/pawn';
 import { Move, PieceType, Player } from '../piece/types';
-import { InvalidMoveError } from '../../errors/invalid-move-error';
 
 describe('Board', () => {
   let board: Board;
