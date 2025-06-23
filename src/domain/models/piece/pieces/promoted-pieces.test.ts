@@ -2,9 +2,9 @@ import { PromotedKnight } from './promoted-knight';
 import { PromotedLance } from './promoted-lance';
 import { PromotedSilver } from './promoted-silver';
 import { Tokin } from './tokin';
+import { createPiece } from '../factory';
 import { IBoard, IPiece } from '../interface';
 import { Move, PieceType, Player, Position } from '../types';
-import { createPiece } from '../factory';
 
 // モックボードの作成
 class MockBoard implements IBoard {

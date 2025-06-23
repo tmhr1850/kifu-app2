@@ -1,7 +1,7 @@
 import { Rook } from './rook';
+import { createPiece } from '../factory';
 import { IBoard, IPiece } from '../interface';
 import { Move, PieceType, Player, Position } from '../types';
-import { createPiece } from '../factory';
 
 // モックボードの作成
 class MockBoard implements IBoard {

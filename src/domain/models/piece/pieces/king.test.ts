@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { King } from './king';
 import { Board } from '../../board/board';
-import { Player, PieceType } from '../types';
 import { createPiece } from '../factory';
+import { Player, PieceType } from '../types';
 
 describe('King', () => {
   let board: Board;

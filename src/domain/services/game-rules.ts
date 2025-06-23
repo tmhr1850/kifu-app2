@@ -30,7 +30,7 @@ export class GameRules {
 
       for (const to of validDestinations) {
         // 成りのロジック
-        const canPromote = piece.canPromote(to);
+        const canPromote = this.canPromote(piece, to, from);
 
         // 強制成りの判定
         const isPawnOrLance =
@@ -124,6 +124,46 @@ export class GameRules {
       ) {
         return true;
       }
+    }
+    return false;
+  }
+
+  /**
+   * 駒が成れるかどうかを判定します。
+   * @param {IPiece} piece - 判定対象の駒
+   * @param {Position} to - 移動先の位置
+   * @param {Position} from - 移動元の位置
+   * @returns {boolean} - 成れる場合はtrue、そうでない場合はfalse
+   */
+  private canPromote(piece: IPiece, to: Position, from: Position): boolean {
+    if (piece.type === PieceType.KING || piece.type === PieceType.GOLD) {
+      return false;
+    }
+
+    const player = piece.player;
+    const promotionZoneStart = player === Player.SENTE ? 1 : 7;
+    const promotionZoneEnd = player === Player.SENTE ? 3 : 9;
+
+    const isMovingToPromotionZone =
+      to.row >= promotionZoneStart && to.row <= promotionZoneEnd;
+    const isMovingFromPromotionZone =
+      from.row >= promotionZoneStart && from.row <= promotionZoneEnd;
+
+    if (isMovingToPromotionZone || isMovingFromPromotionZone) {
+      // 特定の駒は特定の段で強制的に成る
+      if (
+        (piece.type === PieceType.PAWN || piece.type === PieceType.LANCE) &&
+        to.row === (player === Player.SENTE ? 1 : 9)
+      ) {
+        return true;
+      }
+      if (
+        piece.type === PieceType.KNIGHT &&
+        to.row <= (player === Player.SENTE ? 2 : 8)
+      ) {
+        return true;
+      }
+      return true;
     }
     return false;
   }

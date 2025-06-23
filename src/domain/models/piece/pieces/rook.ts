@@ -1,9 +1,9 @@
 import { IBoard } from '../interface';
 import { Piece } from '../piece';
-import { PieceType, Player, Position, Move } from '../types';
+import { PieceType, Player, Position } from '../types';
 
 /**
- * 飛車クラス
+ * 飛車の駒クラス
  */
 export class Rook extends Piece {
   constructor(player: Player, position: Position | null = null) {

@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { Lance } from './lance';
 import { Board } from '../../board/board';
+import { createPiece } from '../factory';
 import { Player, PieceType } from '../types';
 import { Position } from '../types';
-import { createPiece } from '../factory';
 
 describe('Lance', () => {
   let board: Board;

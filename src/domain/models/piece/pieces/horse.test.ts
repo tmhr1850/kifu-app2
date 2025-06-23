@@ -3,8 +3,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Horse } from './horse';
 import { Pawn } from './pawn';
 import { Board } from '../../board/board';
-import { Player, PieceType, Position } from '../types';
 import { createPiece } from '../factory';
+import { Player, PieceType, Position } from '../types';
 
 describe('Horse', () => {
   let board: Board;
