@@ -22,35 +22,6 @@ export abstract class Piece implements IPiece {
    */
   abstract getValidMoves(board: IBoard): Position[];
 
-  /**
-   * 成り駒への変換が可能かチェック
-   * @param to 移動先の位置
-   * @returns 成り可能な場合true
-   */
-  canPromote(to: Position): boolean {
-    // 持ち駒は成れない
-    if (!this.position) {
-      return false;
-    }
-
-    // 金と玉は成れない
-    if (this.type === PieceType.GOLD || this.type === PieceType.KING) {
-      return false;
-    }
-
-    // すでに成り駒は成れない
-    if (this.isPromoted()) {
-      return false;
-    }
-
-    // 先手の場合：敵陣は0-2段目
-    if (this.player === Player.SENTE) {
-      return to.row <= 2 || this.position.row <= 2;
-    }
-    
-    // 後手の場合：敵陣は6-8段目
-    return to.row >= 6 || this.position.row >= 6;
-  }
 
   /**
    * 成り駒に変換

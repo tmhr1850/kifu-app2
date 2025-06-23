@@ -80,12 +80,6 @@ describe('Gold', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('金は成れない', () => {
-      const gold = new Gold(Player.SENTE, { row: 4, column: 4 });
-      expect(gold.canPromote({ row: 2, column: 4 })).toBe(false);
-    });
-  });
 
   describe('promote', () => {
     it('金は成り駒に変換できない', () => {

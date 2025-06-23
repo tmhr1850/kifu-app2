@@ -154,26 +154,6 @@ describe('Rook（飛車）', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('敵陣に入る時に成れる', () => {
-      const rook = new Rook(Player.SENTE, { row: 3, column: 4 });
-      
-      expect(rook.canPromote({ row: 2, column: 4 })).toBe(true);
-      expect(rook.canPromote({ row: 1, column: 4 })).toBe(true);
-    });
-
-    it('敵陣から出る時も成れる', () => {
-      const rook = new Rook(Player.SENTE, { row: 2, column: 4 });
-      
-      expect(rook.canPromote({ row: 3, column: 4 })).toBe(true);
-    });
-
-    it('敵陣内での移動でも成れる', () => {
-      const rook = new Rook(Player.SENTE, { row: 1, column: 4 });
-      
-      expect(rook.canPromote({ row: 0, column: 4 })).toBe(true);
-    });
-  });
 
   describe('promote', () => {
     it('飛車を竜に変換できる', () => {

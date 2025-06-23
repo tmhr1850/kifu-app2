@@ -79,12 +79,6 @@ describe('Lance', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('先手の場合、敵陣に入る時に成れる', () => {
-      const lance = new Lance(Player.SENTE, { row: 4, column: 0 });
-      expect(lance.canPromote({ row: 2, column: 0 })).toBe(true);
-    });
-  });
 
   describe('promote', () => {
     it('香車を成香に変換できる', () => {

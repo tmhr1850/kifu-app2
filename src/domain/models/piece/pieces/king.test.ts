@@ -66,12 +66,6 @@ describe('King', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('玉は成れない', () => {
-      const king = new King(Player.SENTE, { row: 4, column: 4 });
-      expect(king.canPromote({ row: 2, column: 4 })).toBe(false);
-    });
-  });
 
   describe('promote', () => {
     it('玉は成り駒に変換できない', () => {

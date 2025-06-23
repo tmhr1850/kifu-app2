@@ -99,14 +99,6 @@ describe('Dragon', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('竜は成れない（すでに成り駒）', () => {
-      const dragon = new Dragon(Player.SENTE, { row: 4, column: 4 });
-      
-      expect(dragon.canPromote({ row: 0, column: 4 })).toBe(false);
-      expect(dragon.canPromote({ row: 2, column: 4 })).toBe(false);
-    });
-  });
 
   describe('promote', () => {
     it('竜は成り駒に変換できない', () => {

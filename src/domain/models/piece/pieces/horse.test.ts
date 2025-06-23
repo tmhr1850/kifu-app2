@@ -86,12 +86,6 @@ describe('Horse', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('馬は成れない（すでに成り駒）', () => {
-      const horse = new Horse(Player.SENTE, { row: 4, column: 4 });
-      expect(horse.canPromote({ row: 2, column: 4 })).toBe(false);
-    });
-  });
 
   describe('promote', () => {
     it('馬は成り駒に変換できない', () => {

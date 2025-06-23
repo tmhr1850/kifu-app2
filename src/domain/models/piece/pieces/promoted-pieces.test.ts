@@ -153,14 +153,6 @@ promotedPieceTestCases.forEach(({ name, PieceClass, type }) => {
       });
     });
 
-    describe('canPromote', () => {
-      it('成り駒は成れない', () => {
-        const piece = new PieceClass(Player.SENTE, { row: 4, column: 4 });
-        
-        expect(piece.canPromote({ row: 2, column: 4 })).toBe(false);
-        expect(piece.canPromote({ row: 0, column: 4 })).toBe(false);
-      });
-    });
 
     describe('promote', () => {
       it('成り駒は成り駒に変換できない', () => {

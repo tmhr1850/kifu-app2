@@ -101,32 +101,6 @@ describe('Piece', () => {
     });
   });
 
-  describe('canPromote', () => {
-    it('先手の駒が敵陣に入れば成れること', () => {
-      const piece = createPiece(PieceType.PAWN, Player.SENTE, {
-        row: 2,
-        column: 0,
-      });
-      // 移動後の位置を渡して判定
-      expect(piece.canPromote({ row: 2, column: 0 })).toBe(true);
-    });
-
-    it('後手の駒が敵陣に入れば成れること', () => {
-      const piece = createPiece(PieceType.PAWN, Player.GOTE, {
-        row: 6,
-        column: 0,
-      });
-      expect(piece.canPromote({ row: 6, column: 0 })).toBe(true);
-    });
-
-    it('敵陣にいない場合は成れないこと', () => {
-      const piece = createPiece(PieceType.PAWN, Player.SENTE, {
-        row: 3,
-        column: 0,
-      });
-      expect(piece.canPromote({ row: 3, column: 0 })).toBe(false);
-    });
-  });
 
   describe('getValidMoves', () => {
     let board: IBoard;
