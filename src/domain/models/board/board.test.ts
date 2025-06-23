@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Board } from './board';
 import { createPiece } from '../piece/factory';
 import { IBoard, IPiece } from '../piece/interface';
+import { Pawn } from '../piece/pieces/pawn';
 import { Move, PieceType, Player } from '../piece/types';
 
 describe('Board', () => {
@@ -156,24 +157,19 @@ describe('Board', () => {
     });
 
     it('成りの手を正しく適用できること', () => {
-      // セットアップ：歩を敵陣に配置
       const board = new Board();
-      const pawn = createPiece(PieceType.PAWN, Player.SENTE);
-      board.setPiece({ row: 1, column: 0 }, pawn); // 敵陣近く
+      board.setPiece({ row: 1, column: 0 }, new Pawn(Player.SENTE));
 
-      const promoteMove: Move = {
+      const move: Move = {
         from: { row: 1, column: 0 },
-        to: { row: 0, column: 0 }, // 敵陣最奥へ
+        to: { row: 0, column: 0 },
         isPromotion: true,
       };
 
-      // 実行
-      const newBoard = board.applyMove(promoteMove);
-
-      // 検証
+      const newBoard = board.applyMove(move);
       const promotedPiece = newBoard.getPiece({ row: 0, column: 0 });
       expect(promotedPiece).not.toBeNull();
-      expect(promotedPiece?.type).toBe(PieceType.PROMOTED_PAWN);
+      expect(promotedPiece?.type).toBe(PieceType.TOKIN);
       expect(newBoard.getPiece({ row: 1, column: 0 })).toBeNull();
     });
   });

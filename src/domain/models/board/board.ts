@@ -139,7 +139,7 @@ export class Board implements IBoard {
     if (!originalPiece) {
       // 動かす駒がない場合は、ロジックエラーの可能性が高い
       // 本来は呼び出し側(GameRules)が有効な手を渡す責務を持つ
-      throw new Error(`指定された位置(${move.from.row}, ${move.from.col})に駒が存在しません`);
+      throw new Error(`指定された位置(${move.from.row}, ${move.from.column})に駒が存在しません`);
     }
 
     // 新しい位置情報を持つクローンを作成
