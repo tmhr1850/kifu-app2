@@ -1,7 +1,7 @@
 // Models
-export { Piece, PieceType, Player, type Position } from './models/piece';
-export { Board } from './models/board';
-export { type Move, createMove } from './models/move';
+export type { IPiece, IBoard } from './models/piece/interface';
+export { Player, PieceType } from './models/piece/types';
+export type { Position, Move } from './models/piece/types';
 
 // Services
-export { GameRules, type IGameRules } from './services/game-rules';
+export { GameRules } from './services/game-rules';
