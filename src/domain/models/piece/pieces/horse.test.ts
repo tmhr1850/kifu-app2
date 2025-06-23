@@ -1,15 +1,19 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { Horse } from './horse';
-import { IBoard } from '../interface';
-import { PieceType, Player, Position } from '../types';
-import { Board } from '../../board/board';
-import { Pawn } from './pawn';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-describe('Horse（馬）', () => {
-  let board: IBoard;
+import { Horse } from './horse';
+import { Pawn } from './pawn';
+import { Board } from '../../board/board';
+import { Player, PieceType, Position } from '../types';
+
+describe('Horse', () => {
+  let board: Board;
 
   beforeEach(() => {
     board = new Board();
+    const horse = new Horse(Player.SENTE, { row: 0, column: 0 });
+    const pawn = new Pawn(Player.SENTE, { row: 1, column: 0 });
+    board.setPiece({ row: 0, column: 0 }, horse);
+    board.setPiece({ row: 1, column: 0 }, pawn);
   });
 
   describe('コンストラクタ', () => {

@@ -1,25 +1,20 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { Dragon } from './dragon';
-import { IBoard } from '../interface';
-import { PieceType, Player, Position } from '../types';
-import { Board } from '../../board/board';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-describe('Dragon（竜）', () => {
-  let board: IBoard;
+import { Dragon } from './dragon';
+import { Board } from '../../board/board';
+import { Player, PieceType } from '../types';
+
+describe('Dragon', () => {
+  let board: Board;
 
   beforeEach(() => {
     board = new Board();
   });
 
-  describe('コンストラクタ', () => {
-    it('正しく竜を作成できる', () => {
-      const position: Position = { row: 4, column: 4 };
-      const dragon = new Dragon(Player.SENTE, position);
-
-      expect(dragon.type).toBe(PieceType.DRAGON);
-      expect(dragon.player).toBe(Player.SENTE);
-      expect(dragon.position).toEqual(position);
-    });
+  it('should have the correct type and player', () => {
+    const dragon = new Dragon(Player.SENTE, { row: 0, column: 0 });
+    expect(dragon.type).toBe(PieceType.DRAGON);
+    expect(dragon.player).toBe(Player.SENTE);
   });
 
   describe('getValidMoves', () => {

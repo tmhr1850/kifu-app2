@@ -1,6 +1,6 @@
-import { IBoard, IPiece } from '../piece/interface';
 import { createPiece } from '../piece/factory';
-import { PieceType, Player, Position, Move } from '../piece/types';
+import { IBoard, IPiece } from '../piece/interface';
+import { Move, PieceType, Player, Position } from '../piece/types';
 
 /**
  * 将棋盤を表すクラス

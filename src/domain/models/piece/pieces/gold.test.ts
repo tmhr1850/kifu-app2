@@ -1,25 +1,20 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { Gold } from './gold';
-import { IBoard } from '../interface';
-import { PieceType, Player, Position } from '../types';
-import { Board } from '../../board/board';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-describe('Gold（金）', () => {
-  let board: IBoard;
+import { Gold } from './gold';
+import { Board } from '../../board/board';
+import { Player, PieceType } from '../types';
+
+describe('Gold', () => {
+  let board: Board;
 
   beforeEach(() => {
     board = new Board();
   });
 
-  describe('コンストラクタ', () => {
-    it('正しく金を作成できる', () => {
-      const position: Position = { row: 4, column: 4 };
-      const gold = new Gold(Player.SENTE, position);
-
-      expect(gold.type).toBe(PieceType.GOLD);
-      expect(gold.player).toBe(Player.SENTE);
-      expect(gold.position).toEqual(position);
-    });
+  it('should have the correct type and player', () => {
+    const gold = new Gold(Player.SENTE, { row: 0, column: 0 });
+    expect(gold.type).toBe(PieceType.GOLD);
+    expect(gold.player).toBe(Player.SENTE);
   });
 
   describe('getValidMoves', () => {

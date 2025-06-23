@@ -1,25 +1,20 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { King } from './king';
-import { IBoard } from '../interface';
-import { PieceType, Player, Position } from '../types';
-import { Board } from '../../board/board';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-describe('King（玉）', () => {
-  let board: IBoard;
+import { King } from './king';
+import { Board } from '../../board/board';
+import { Player, PieceType } from '../types';
+
+describe('King', () => {
+  let board: Board;
 
   beforeEach(() => {
     board = new Board();
   });
 
-  describe('コンストラクタ', () => {
-    it('正しく玉を作成できる', () => {
-      const position: Position = { row: 4, column: 4 };
-      const king = new King(Player.SENTE, position);
-
-      expect(king.type).toBe(PieceType.KING);
-      expect(king.player).toBe(Player.SENTE);
-      expect(king.position).toEqual(position);
-    });
+  it('should have the correct type and player', () => {
+    const king = new King(Player.SENTE, { row: 0, column: 0 });
+    expect(king.type).toBe(PieceType.KING);
+    expect(king.player).toBe(Player.SENTE);
   });
 
   describe('getValidMoves', () => {

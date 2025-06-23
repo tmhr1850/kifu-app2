@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { GameRules } from './game-rules';
 import { Board } from '../models/board/board';
-import { Player, PieceType } from '../models/piece/types';
-import { IBoard } from '../models/piece/interface';
 import { createPiece } from '../models/piece/factory';
+import { IBoard } from '../models/piece/interface';
+import { PieceType, Player } from '../models/piece/types';
 
 // TODO: `main`の新しいモデルに合わせてテストを全面的に書き直す必要があります。
 // これは、BoardとPieceの実装が完了してからでないと不可能です。

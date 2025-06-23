@@ -1,14 +1,21 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { Pawn } from './pawn';
-import { IBoard } from '../interface';
-import { PieceType, Player, Position } from '../types';
-import { Board } from '../../board/board';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-describe('Pawn（歩）', () => {
-  let board: IBoard;
+import { Pawn } from './pawn';
+import { Board } from '../../board/board';
+import { Player, PieceType } from '../types';
+import { Position } from '../types';
+
+describe('Pawn', () => {
+  let board: Board;
 
   beforeEach(() => {
     board = new Board();
+  });
+
+  it('should have the correct type and player', () => {
+    const pawn = new Pawn(Player.SENTE, { row: 0, column: 0 });
+    expect(pawn.type).toBe(PieceType.PAWN);
+    expect(pawn.player).toBe(Player.SENTE);
   });
 
   describe('コンストラクタ', () => {

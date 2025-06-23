@@ -21,22 +21,18 @@ export class Horse extends Piece {
   getValidMoves(board: IBoard): Move[] {
     if (!this.position) return [];
 
-    // 角の動き
-    const bishopMoves = new Bishop(this.player, this.position).getValidMoves(board);
+    const moves: Move[] = [];
 
-    // 王の動きの一部（上下左右）
-    const kingLikeMoves: Move[] = [];
+    // 角の動き
+    const bishop = new Bishop(this.player, this.position);
+    moves.push(...bishop.getValidMoves(board));
+
+    // 王の動きの一部（前方、左右、後方）
     const king = new King(this.player, this.position);
     const kingAllMoves = king.getValidMoves(board);
+    moves.push(...kingAllMoves);
 
-    // Bishopの動きは斜めのみなので、Kingの動きから直線的な動きだけをフィルタリング
-    const bishopMovePositions = new Set(bishopMoves.map(m => `${m.to.row},${m.to.column}`));
-    const kingStraightMoves = kingAllMoves.filter(kingMove => {
-        const isDiagonal = Math.abs(kingMove.to.row - this.position!.row) === Math.abs(kingMove.to.column - this.position!.column)
-        return !isDiagonal;
-    });
-
-    return [...bishopMoves, ...kingStraightMoves];
+    return moves;
   }
 
   clone(position?: Position): Horse {

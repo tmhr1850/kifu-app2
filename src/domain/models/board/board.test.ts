@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createPiece } from '../piece/factory';
-import { Player, PieceType } from '../piece/types';
+
 import { Board } from './board';
-import { IBoard } from '../piece/interface';
-import { Move } from '../piece/types';
+import { createPiece } from '../piece/factory';
+import { IBoard, IPiece } from '../piece/interface';
+import { Move, PieceType, Player } from '../piece/types';
 
 describe('Board', () => {
   let board: IBoard;
@@ -85,8 +85,12 @@ describe('Board', () => {
 
       expect(sentePieces.length).toBe(20);
       expect(gotePieces.length).toBe(20);
-      expect(sentePieces.every(p => p.player === Player.SENTE)).toBe(true);
-      expect(gotePieces.every(p => p.player === Player.GOTE)).toBe(true);
+      expect(sentePieces.every((p: IPiece) => p.player === Player.SENTE)).toBe(
+        true
+      );
+      expect(gotePieces.every((p: IPiece) => p.player === Player.GOTE)).toBe(
+        true
+      );
     });
   });
 
@@ -110,10 +114,11 @@ describe('Board', () => {
   describe('手の適用', () => {
     it('指定された手を適用し、新しい盤面を返すこと', () => {
       // セットアップ
-      let board = Board.createInitialBoard();
+      const board = Board.createInitialBoard();
       const move: Move = {
         from: { row: 6, column: 7 }, // 7七の歩
-        to: { row: 5, column: 7 },   // 7六へ
+        to: { row: 5, column: 7 }, // 7六へ
+        isPromotion: false,
       };
 
       // 実行

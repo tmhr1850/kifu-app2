@@ -1,4 +1,4 @@
-import { IBoard, IPiece } from '../models/piece/interface';
+import { IBoard } from '../models/piece/interface';
 import { Player, Position, Move } from '../models/piece/types';
 
 /**

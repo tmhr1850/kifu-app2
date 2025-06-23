@@ -1,14 +1,21 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { Lance } from './lance';
-import { IBoard } from '../interface';
-import { PieceType, Player, Position } from '../types';
-import { Board } from '../../board/board';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-describe('Lance（香車）', () => {
-  let board: IBoard;
+import { Lance } from './lance';
+import { Board } from '../../board/board';
+import { Player, PieceType } from '../types';
+import { Position } from '../types';
+
+describe('Lance', () => {
+  let board: Board;
 
   beforeEach(() => {
     board = new Board();
+  });
+
+  it('should have the correct type and player', () => {
+    const lance = new Lance(Player.SENTE, { row: 0, column: 0 });
+    expect(lance.type).toBe(PieceType.LANCE);
+    expect(lance.player).toBe(Player.SENTE);
   });
 
   describe('コンストラクタ', () => {

@@ -1,8 +1,8 @@
 import { IBoard } from '../interface';
 import { Piece } from '../piece';
 import { PieceType, Player, Position, Move } from '../types';
-import { Rook } from './rook';
 import { King } from './king';
+import { Rook } from './rook';
 
 /**
  * 竜（成り飛車）クラス
@@ -25,7 +25,6 @@ export class Dragon extends Piece {
     const rookMoves = new Rook(this.player, this.position).getValidMoves(board);
 
     // 王の動きの一部（斜め）
-    const kingLikeMoves: Move[] = [];
     const king = new King(this.player, this.position);
     const kingAllMoves = king.getValidMoves(board);
 
