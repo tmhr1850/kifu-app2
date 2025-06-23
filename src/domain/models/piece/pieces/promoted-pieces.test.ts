@@ -2,8 +2,9 @@ import { PromotedKnight } from './promoted-knight';
 import { PromotedLance } from './promoted-lance';
 import { PromotedSilver } from './promoted-silver';
 import { Tokin } from './tokin';
+import { createPiece } from '../factory';
 import { IBoard, IPiece } from '../interface';
-import { PieceType, Player, Position } from '../types';
+import { Move, PieceType, Player, Position } from '../types';
 
 // モックボードの作成
 class MockBoard implements IBoard {
@@ -13,19 +14,50 @@ class MockBoard implements IBoard {
     this.pieces = new Map();
   }
 
-  getPieceAt(position: Position): IPiece | null {
+  getPiece(position: Position): IPiece | null {
     const key = `${position.row}-${position.column}`;
     return this.pieces.get(key) || null;
   }
 
   isValidPosition(position: Position): boolean {
-    return position.row >= 1 && position.row <= 9 && 
-           position.column >= 1 && position.column <= 9;
+    return position.row >= 0 && position.row < 9 && 
+           position.column >= 0 && position.column < 9;
   }
 
-  setPieceAt(position: Position, piece: IPiece): void {
+  setPiece(position: Position, piece: IPiece): void {
     const key = `${position.row}-${position.column}`;
     this.pieces.set(key, piece);
+  }
+
+  clone(): IBoard {
+    const newBoard = new MockBoard();
+    this.pieces.forEach((piece, key) => {
+      newBoard.pieces.set(key, piece.clone());
+    });
+    return newBoard;
+  }
+
+  getPieces(player: Player): IPiece[] {
+    return Array.from(this.pieces.values()).filter(p => p.player === player);
+  }
+
+  findKing(player: Player): Position | null {
+    for (const piece of this.pieces.values()) {
+      if (piece.type === PieceType.KING && piece.player === player) {
+        return piece.position;
+      }
+    }
+    return null;
+  }
+
+  applyMove(move: Move): IBoard {
+    const newBoard = this.clone();
+    const piece = newBoard.getPiece(move.from);
+    if (piece) {
+      newBoard.setPiece(move.from, null);
+      newBoard.setPiece(move.to, piece.clone(move.to));
+    }
+    return newBoard;
   }
 }
 
@@ -54,47 +86,45 @@ promotedPieceTestCases.forEach(({ name, PieceClass, type }) => {
       describe('先手の場合', () => {
         it('金と同じく前方3マス、横2マス、後方1マスに移動できる', () => {
           const board = new MockBoard();
-          const piece = new PieceClass(Player.SENTE, { row: 5, column: 5 });
-          board.setPieceAt({ row: 5, column: 5 }, piece);
+          const piece = new PieceClass(Player.SENTE, { row: 4, column: 4 });
+          board.setPiece({ row: 4, column: 4 }, piece);
 
-          const moves = piece.getValidMoves(board);
-          const destinations = moves.map(move => move.to);
+          const destinations = piece.getValidMoves(board);
 
           // 前方3マス
-          expect(destinations).toContainEqual({ row: 4, column: 4 });
-          expect(destinations).toContainEqual({ row: 4, column: 5 });
-          expect(destinations).toContainEqual({ row: 4, column: 6 });
+          expect(destinations).toContainEqual({ row: 3, column: 3 });
+          expect(destinations).toContainEqual({ row: 3, column: 4 });
+          expect(destinations).toContainEqual({ row: 3, column: 5 });
           // 横2マス
-          expect(destinations).toContainEqual({ row: 5, column: 4 });
-          expect(destinations).toContainEqual({ row: 5, column: 6 });
+          expect(destinations).toContainEqual({ row: 4, column: 3 });
+          expect(destinations).toContainEqual({ row: 4, column: 5 });
           // 後方1マス
-          expect(destinations).toContainEqual({ row: 6, column: 5 });
+          expect(destinations).toContainEqual({ row: 5, column: 4 });
           
           expect(destinations).toHaveLength(6);
           // 斜め後ろには移動できない
-          expect(destinations).not.toContainEqual({ row: 6, column: 4 });
-          expect(destinations).not.toContainEqual({ row: 6, column: 6 });
+          expect(destinations).not.toContainEqual({ row: 5, column: 3 });
+          expect(destinations).not.toContainEqual({ row: 5, column: 5 });
         });
       });
 
       describe('後手の場合', () => {
         it('金と同じく前方3マス、横2マス、後方1マスに移動できる（後手の向き）', () => {
           const board = new MockBoard();
-          const piece = new PieceClass(Player.GOTE, { row: 5, column: 5 });
-          board.setPieceAt({ row: 5, column: 5 }, piece);
+          const piece = new PieceClass(Player.GOTE, { row: 4, column: 4 });
+          board.setPiece({ row: 4, column: 4 }, piece);
 
-          const moves = piece.getValidMoves(board);
-          const destinations = moves.map(move => move.to);
+          const destinations = piece.getValidMoves(board);
 
           // 前方3マス（後手は下向き）
-          expect(destinations).toContainEqual({ row: 6, column: 4 });
-          expect(destinations).toContainEqual({ row: 6, column: 5 });
-          expect(destinations).toContainEqual({ row: 6, column: 6 });
-          // 横2マス
+          expect(destinations).toContainEqual({ row: 5, column: 3 });
           expect(destinations).toContainEqual({ row: 5, column: 4 });
-          expect(destinations).toContainEqual({ row: 5, column: 6 });
-          // 後方1マス
+          expect(destinations).toContainEqual({ row: 5, column: 5 });
+          // 横2マス
+          expect(destinations).toContainEqual({ row: 4, column: 3 });
           expect(destinations).toContainEqual({ row: 4, column: 5 });
+          // 後方1マス
+          expect(destinations).toContainEqual({ row: 3, column: 4 });
           
           expect(destinations).toHaveLength(6);
         });
@@ -102,16 +132,15 @@ promotedPieceTestCases.forEach(({ name, PieceClass, type }) => {
 
       it('味方の駒がある場所には移動できない', () => {
         const board = new MockBoard();
-        const piece = new PieceClass(Player.SENTE, { row: 5, column: 5 });
-        const allyPiece = new PieceClass(Player.SENTE, { row: 4, column: 5 });
+        const piece = new PieceClass(Player.SENTE, { row: 4, column: 4 });
+        const allyPiece = new PieceClass(Player.SENTE, { row: 3, column: 4 });
         
-        board.setPieceAt({ row: 5, column: 5 }, piece);
-        board.setPieceAt({ row: 4, column: 5 }, allyPiece);
+        board.setPiece({ row: 4, column: 4 }, piece);
+        board.setPiece({ row: 3, column: 4 }, allyPiece);
 
-        const moves = piece.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = piece.getValidMoves(board);
 
-        expect(destinations).not.toContainEqual({ row: 4, column: 5 });
+        expect(destinations).not.toContainEqual({ row: 3, column: 4 });
         expect(destinations).toHaveLength(5);
       });
 
@@ -119,25 +148,25 @@ promotedPieceTestCases.forEach(({ name, PieceClass, type }) => {
         const board = new MockBoard();
         const piece = new PieceClass(Player.SENTE);
 
-        const moves = piece.getValidMoves(board);
-        expect(moves).toHaveLength(0);
+        const destinations = piece.getValidMoves(board);
+        expect(destinations).toHaveLength(0);
       });
     });
 
     describe('canPromote', () => {
       it('成り駒は成れない', () => {
-        const piece = new PieceClass(Player.SENTE, { row: 5, column: 5 });
+        const piece = new PieceClass(Player.SENTE, { row: 4, column: 4 });
         
-        expect(piece.canPromote({ row: 1, column: 5 })).toBe(false);
-        expect(piece.canPromote({ row: 3, column: 5 })).toBe(false);
+        expect(piece.canPromote({ row: 2, column: 4 })).toBe(false);
+        expect(piece.canPromote({ row: 0, column: 4 })).toBe(false);
       });
     });
 
     describe('promote', () => {
       it('成り駒は成り駒に変換できない', () => {
-        const piece = new PieceClass(Player.SENTE, { row: 5, column: 5 });
+        const piece = new PieceClass(Player.SENTE, { row: 4, column: 4 });
         
-        expect(() => piece.promote()).toThrow('この駒は成ることができません');
+        expect(() => piece.promote(createPiece)).toThrow('この駒は成ることができません');
       });
     });
   });

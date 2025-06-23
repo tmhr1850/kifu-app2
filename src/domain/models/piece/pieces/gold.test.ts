@@ -1,124 +1,80 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+
 import { Gold } from './gold';
-import { IBoard, IPiece } from '../interface';
-import { PieceType, Player, Position } from '../types';
+import { Board } from '../../board/board';
+import { createPiece } from '../factory';
+import { Player, PieceType } from '../types';
 
-// モックボードの作成
-class MockBoard implements IBoard {
-  private pieces: Map<string, IPiece>;
+describe('Gold', () => {
+  let board: Board;
 
-  constructor() {
-    this.pieces = new Map();
-  }
+  beforeEach(() => {
+    board = new Board();
+  });
 
-  getPieceAt(position: Position): IPiece | null {
-    const key = `${position.row}-${position.column}`;
-    return this.pieces.get(key) || null;
-  }
-
-  isValidPosition(position: Position): boolean {
-    return position.row >= 1 && position.row <= 9 && 
-           position.column >= 1 && position.column <= 9;
-  }
-
-  setPieceAt(position: Position, piece: IPiece): void {
-    const key = `${position.row}-${position.column}`;
-    this.pieces.set(key, piece);
-  }
-}
-
-describe('Gold（金）', () => {
-  describe('コンストラクタ', () => {
-    it('正しく金を作成できる', () => {
-      const position: Position = { row: 5, column: 5 };
-      const gold = new Gold(Player.SENTE, position);
-
-      expect(gold.type).toBe(PieceType.GOLD);
-      expect(gold.player).toBe(Player.SENTE);
-      expect(gold.position).toEqual(position);
-    });
+  it('should have the correct type and player', () => {
+    const gold = new Gold(Player.SENTE, { row: 0, column: 0 });
+    expect(gold.type).toBe(PieceType.GOLD);
+    expect(gold.player).toBe(Player.SENTE);
   });
 
   describe('getValidMoves', () => {
     describe('先手の場合', () => {
       it('前方3マス、横2マス、後方1マスに移動できる', () => {
-        const board = new MockBoard();
-        const gold = new Gold(Player.SENTE, { row: 5, column: 5 });
-        board.setPieceAt({ row: 5, column: 5 }, gold);
+        const gold = new Gold(Player.SENTE, { row: 4, column: 4 });
+        board.setPiece({ row: 4, column: 4 }, gold);
 
-        const moves = gold.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = gold.getValidMoves(board);
 
-        // 前方3マス
-        expect(destinations).toContainEqual({ row: 4, column: 4 });
-        expect(destinations).toContainEqual({ row: 4, column: 5 });
-        expect(destinations).toContainEqual({ row: 4, column: 6 });
-        // 横2マス
-        expect(destinations).toContainEqual({ row: 5, column: 4 });
-        expect(destinations).toContainEqual({ row: 5, column: 6 });
-        // 後方1マス
-        expect(destinations).toContainEqual({ row: 6, column: 5 });
-        
         expect(destinations).toHaveLength(6);
-        // 斜め後ろには移動できない
-        expect(destinations).not.toContainEqual({ row: 6, column: 4 });
-        expect(destinations).not.toContainEqual({ row: 6, column: 6 });
+        expect(destinations).toContainEqual({ row: 3, column: 3 }); // 左上
+        expect(destinations).toContainEqual({ row: 3, column: 4 }); // 前
+        expect(destinations).toContainEqual({ row: 3, column: 5 }); // 右上
+        expect(destinations).toContainEqual({ row: 4, column: 3 }); // 左
+        expect(destinations).toContainEqual({ row: 4, column: 5 }); // 右
+        expect(destinations).toContainEqual({ row: 5, column: 4 }); // 後
       });
     });
 
     describe('後手の場合', () => {
       it('前方3マス、横2マス、後方1マスに移動できる（後手の向き）', () => {
-        const board = new MockBoard();
-        const gold = new Gold(Player.GOTE, { row: 5, column: 5 });
-        board.setPieceAt({ row: 5, column: 5 }, gold);
+        const gold = new Gold(Player.GOTE, { row: 4, column: 4 });
+        board.setPiece({ row: 4, column: 4 }, gold);
 
-        const moves = gold.getValidMoves(board);
-        const destinations = moves.map(move => move.to);
+        const destinations = gold.getValidMoves(board);
 
-        // 前方3マス（後手は下向き）
-        expect(destinations).toContainEqual({ row: 6, column: 4 });
-        expect(destinations).toContainEqual({ row: 6, column: 5 });
-        expect(destinations).toContainEqual({ row: 6, column: 6 });
-        // 横2マス
-        expect(destinations).toContainEqual({ row: 5, column: 4 });
-        expect(destinations).toContainEqual({ row: 5, column: 6 });
-        // 後方1マス
-        expect(destinations).toContainEqual({ row: 4, column: 5 });
-        
         expect(destinations).toHaveLength(6);
-        // 斜め後ろには移動できない
-        expect(destinations).not.toContainEqual({ row: 4, column: 4 });
-        expect(destinations).not.toContainEqual({ row: 4, column: 6 });
+        expect(destinations).toContainEqual({ row: 5, column: 3 });
+        expect(destinations).toContainEqual({ row: 5, column: 4 });
+        expect(destinations).toContainEqual({ row: 5, column: 5 });
+        expect(destinations).toContainEqual({ row: 4, column: 3 });
+        expect(destinations).toContainEqual({ row: 4, column: 5 });
+        expect(destinations).toContainEqual({ row: 3, column: 4 });
       });
     });
 
     it('盤面の端では移動可能マスが制限される', () => {
-      const board = new MockBoard();
-      const gold = new Gold(Player.SENTE, { row: 1, column: 1 });
-      board.setPieceAt({ row: 1, column: 1 }, gold);
-
+      const gold = new Gold(Player.SENTE, { row: 0, column: 0 });
+      board.setPiece({ row: 0, column: 0 }, gold);
       const moves = gold.getValidMoves(board);
-      expect(moves).toHaveLength(2); // 右と下のみ
+      expect(moves).toHaveLength(2);
+      expect(moves).toContainEqual({ row: 0, column: 1 });
+      expect(moves).toContainEqual({ row: 1, column: 0 });
     });
 
     it('味方の駒がある場所には移動できない', () => {
-      const board = new MockBoard();
-      const gold = new Gold(Player.SENTE, { row: 5, column: 5 });
-      const allyPiece = new Gold(Player.SENTE, { row: 4, column: 5 });
-      
-      board.setPieceAt({ row: 5, column: 5 }, gold);
-      board.setPieceAt({ row: 4, column: 5 }, allyPiece);
+      const gold = new Gold(Player.SENTE, { row: 4, column: 4 });
+      const ally = new Gold(Player.SENTE, { row: 3, column: 4 });
+      board.setPiece({ row: 4, column: 4 }, gold);
+      board.setPiece({ row: 3, column: 4 }, ally);
 
       const moves = gold.getValidMoves(board);
-      const destinations = moves.map(move => move.to);
-
-      expect(destinations).not.toContainEqual({ row: 4, column: 5 });
-      expect(destinations).toHaveLength(5);
+      expect(moves).not.toContainEqual({ row: 3, column: 4 });
+      expect(moves).toHaveLength(5);
     });
 
     it('持ち駒の場合は移動できない', () => {
-      const board = new MockBoard();
       const gold = new Gold(Player.SENTE);
-
       const moves = gold.getValidMoves(board);
       expect(moves).toHaveLength(0);
     });
@@ -126,18 +82,15 @@ describe('Gold（金）', () => {
 
   describe('canPromote', () => {
     it('金は成れない', () => {
-      const gold = new Gold(Player.SENTE, { row: 5, column: 5 });
-      
-      expect(gold.canPromote({ row: 1, column: 5 })).toBe(false);
-      expect(gold.canPromote({ row: 3, column: 5 })).toBe(false);
+      const gold = new Gold(Player.SENTE, { row: 4, column: 4 });
+      expect(gold.canPromote({ row: 2, column: 4 })).toBe(false);
     });
   });
 
   describe('promote', () => {
     it('金は成り駒に変換できない', () => {
-      const gold = new Gold(Player.SENTE, { row: 5, column: 5 });
-      
-      expect(() => gold.promote()).toThrow('この駒は成ることができません');
+      const gold = new Gold(Player.SENTE, { row: 4, column: 4 });
+      expect(() => gold.promote(createPiece)).toThrow('この駒は成ることができません');
     });
   });
 });

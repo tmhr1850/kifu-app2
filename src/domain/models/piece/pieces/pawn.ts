@@ -1,9 +1,9 @@
 import { IBoard } from '../interface';
 import { Piece } from '../piece';
-import { PieceType, Player, Position, Move } from '../types';
+import { PieceType, Player, Position } from '../types';
 
 /**
- * 歩クラス
+ * 歩兵の駒クラス
  */
 export class Pawn extends Piece {
   constructor(player: Player, position: Position | null = null) {
@@ -16,36 +16,25 @@ export class Pawn extends Piece {
    * @param board 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[] {
-    if (!this.position) {
-      return [];
+  getValidMoves(board: IBoard): Position[] {
+    const moves: Position[] = [];
+    if (!this.position) return moves;
+
+    const direction = this.player === Player.SENTE ? -1 : 1;
+    const nextRow = this.position.row + direction;
+    const nextPosition = { row: nextRow, column: this.position.column };
+
+    if (board.isValidPosition(nextPosition)) {
+      const piece = board.getPiece(nextPosition);
+      if (!piece || piece.player !== this.player) {
+        moves.push(nextPosition);
+      }
     }
-
-    const moves: Move[] = [];
-    const forward = this.player === Player.SENTE ? -1 : 1;
-
-    const newPosition: Position = {
-      row: this.position.row + forward,
-      column: this.position.column,
-    };
-
-    if (!board.isValidPosition(newPosition)) {
-      return moves;
-    }
-
-    const pieceAtDestination = board.getPieceAt(newPosition);
-    
-    // 移動先に味方の駒がある場合は移動不可
-    if (pieceAtDestination && pieceAtDestination.player === this.player) {
-      return moves;
-    }
-
-    moves.push({
-      from: this.position,
-      to: newPosition,
-      isPromotion: this.canPromote(newPosition),
-    });
 
     return moves;
+  }
+
+  clone(position?: Position): Pawn {
+    return new Pawn(this.player, position ?? this.position);
   }
 }

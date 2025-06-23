@@ -1,19 +1,23 @@
-import { Gold } from './gold';
+import { IBoard } from '../interface';
+import { Piece } from '../piece';
 import { PieceType, Player, Position } from '../types';
+import { Gold } from './gold';
 
 /**
  * 成桂クラス
  * 金と同じ動きをする
  */
-export class PromotedKnight extends Gold {
+export class PromotedKnight extends Piece {
   constructor(player: Player, position: Position | null = null) {
-    super(player, position);
-    // typeを成桂に上書き
-    Object.defineProperty(this, 'type', {
-      value: PieceType.PROMOTED_KNIGHT,
-      writable: false,
-      enumerable: true,
-      configurable: false,
-    });
+    super(PieceType.PROMOTED_KNIGHT, player, position);
+  }
+
+  getValidMoves(board: IBoard): Position[] {
+    const gold = new Gold(this.player, this.position);
+    return gold.getValidMoves(board);
+  }
+
+  clone(position?: Position): PromotedKnight {
+    return new PromotedKnight(this.player, position ?? this.position);
   }
 }

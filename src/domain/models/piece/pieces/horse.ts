@@ -1,6 +1,8 @@
 import { IBoard } from '../interface';
 import { Piece } from '../piece';
-import { PieceType, Player, Position, Move } from '../types';
+import { PieceType, Player, Position } from '../types';
+import { Bishop } from './bishop';
+import { King } from './king';
 
 /**
  * 馬（成り角）クラス
@@ -16,85 +18,38 @@ export class Horse extends Piece {
    * @param board 現在の盤面状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[] {
-    if (!this.position) {
-      return [];
+  getValidMoves(board: IBoard): Position[] {
+    if (!this.position) return [];
+
+    const moveSet = new Map<string, Position>();
+
+    // 角の動き
+    const bishop = new Bishop(this.player, this.position);
+    const bishopMoves = bishop.getValidMoves(board);
+    for (const pos of bishopMoves) {
+      const key = `${pos.row},${pos.column}`;
+      moveSet.set(key, pos);
     }
 
-    const moves: Move[] = [];
-    
-    // 角と同じ斜めの動き
-    const diagonalDirections = [
-      { dr: -1, dc: -1 }, // 左上
-      { dr: -1, dc: 1 },  // 右上
-      { dr: 1, dc: -1 },  // 左下
-      { dr: 1, dc: 1 },   // 右下
-    ];
+    // 王の動きの一部（前方、左右、後方）
+    const king = new King(this.player, this.position);
+    const kingAllMoves = king.getValidMoves(board);
+    const nonDiagonalKingMoves = kingAllMoves.filter(pos => {
+      const dy = Math.abs(pos.row - this.position!.row);
+      const dx = Math.abs(pos.column - this.position!.column);
+      // 縦横の動き (dx+dy=1) のみを追加
+      return dx + dy === 1;
+    });
 
-    for (const { dr, dc } of diagonalDirections) {
-      // 各方向に進めるだけ進む
-      for (let i = 1; i <= 8; i++) {
-        const newPosition: Position = {
-          row: this.position.row + dr * i,
-          column: this.position.column + dc * i,
-        };
-
-        if (!board.isValidPosition(newPosition)) {
-          break;
-        }
-
-        const pieceAtDestination = board.getPieceAt(newPosition);
-        
-        if (pieceAtDestination) {
-          // 敵の駒なら取れる
-          if (pieceAtDestination.player !== this.player) {
-            moves.push({
-              from: this.position,
-              to: newPosition,
-            });
-          }
-          // 駒があったらそれ以上進めない
-          break;
-        }
-
-        moves.push({
-          from: this.position,
-          to: newPosition,
-        });
-      }
+    for (const pos of nonDiagonalKingMoves) {
+      const key = `${pos.row},${pos.column}`;
+      moveSet.set(key, pos);
     }
 
-    // 縦横1マスの動き
-    const straightDirections = [
-      { dr: -1, dc: 0 }, // 上
-      { dr: 1, dc: 0 },  // 下
-      { dr: 0, dc: -1 }, // 左
-      { dr: 0, dc: 1 },  // 右
-    ];
+    return Array.from(moveSet.values());
+  }
 
-    for (const { dr, dc } of straightDirections) {
-      const newPosition: Position = {
-        row: this.position.row + dr,
-        column: this.position.column + dc,
-      };
-
-      if (!board.isValidPosition(newPosition)) {
-        continue;
-      }
-
-      const pieceAtDestination = board.getPieceAt(newPosition);
-      
-      // 移動先に味方の駒がある場合は移動不可
-      if (pieceAtDestination && pieceAtDestination.player === this.player) {
-        continue;
-      }
-
-      moves.push({
-        from: this.position,
-        to: newPosition,
-      });
-    }
-
-    return moves;
+  clone(position?: Position): Horse {
+    return new Horse(this.player, position ?? this.position);
   }
 }

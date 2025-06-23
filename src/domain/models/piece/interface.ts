@@ -15,10 +15,10 @@ export interface IPiece {
   
   /**
    * 指定された盤面で移動可能な位置を計算
-   * @param board 現在の盤面状態
+   * @param board 盤面の状態
    * @returns 移動可能な位置の配列
    */
-  getValidMoves(board: IBoard): Move[];
+  getValidMoves(board: IBoard): Position[];
   
   /**
    * 成り駒への変換が可能かチェック
@@ -29,9 +29,16 @@ export interface IPiece {
   
   /**
    * 成り駒に変換
+   * @param createPiece 駒を生成するファクトリ関数
    * @returns 成り駒のインスタンス
    */
-  promote(): IPiece;
+  promote(
+    createPiece: (
+      type: PieceType,
+      player: Player,
+      position: Position | null,
+    ) => IPiece,
+  ): IPiece;
   
   /**
    * 駒を複製
@@ -39,6 +46,13 @@ export interface IPiece {
    * @returns 複製された駒
    */
   clone(position?: Position): IPiece;
+
+  /**
+   * 他の駒インスタンスと等価であるか比較
+   * @param otherPiece 比較対象の駒
+   * @returns 等価である場合true
+   */
+  equals(otherPiece: IPiece | null): boolean;
 }
 
 /**
@@ -50,12 +64,46 @@ export interface IBoard {
    * @param position 位置
    * @returns 駒またはnull
    */
-  getPieceAt(position: Position): IPiece | null;
-  
+  getPiece(position: Position): IPiece | null;
+
+  /**
+   * 指定位置に駒を配置
+   * @param position 位置
+   * @param piece 配置する駒（nullで駒を削除）
+   */
+  setPiece(position: Position, piece: IPiece | null): void;
+
   /**
    * 指定位置が盤面内かチェック
    * @param position 位置
    * @returns 盤面内の場合true
    */
   isValidPosition(position: Position): boolean;
+
+  /**
+   * 盤面の状態を複製
+   * @returns 複製された盤面
+   */
+  clone(): IBoard;
+
+  /**
+   * 指定されたプレイヤーの盤上の駒をすべて取得する
+   * @param player プレイヤー
+   * @returns 駒の配列
+   */
+  getPieces(player: Player): IPiece[];
+
+  /**
+   * 指定されたプレイヤーの王の位置を探す
+   * @param player プレイヤー
+   * @returns 王の座標、見つからなければnull
+   */
+  findKing(player: Player): Position | null;
+
+  /**
+   * 指定された手を適用した新しい盤面を返す
+   * @param move 適用する手
+   * @returns 手が適用された新しい盤面
+   */
+  applyMove(move: Move): IBoard;
 }
