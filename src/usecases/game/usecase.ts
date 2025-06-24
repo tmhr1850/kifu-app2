@@ -258,7 +258,7 @@ export class GameUseCase implements IGameUseCase {
   }
 
   private isValidPosition(pos: Position): boolean {
-    return pos.col >= 1 && pos.col <= 9 && pos.row >= 1 && pos.row <= 9
+    return pos.column >= 1 && pos.column <= 9 && pos.row >= 1 && pos.row <= 9
   }
 
   private updateGameStatus(): void {
