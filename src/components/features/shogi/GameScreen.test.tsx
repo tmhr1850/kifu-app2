@@ -96,7 +96,7 @@ describe('GameScreen', () => {
     };
 
     vi.mocked(await import('@/usecases/game/usecase')).GameUseCase.mockImplementation(
-      () => mockGameUseCase as any
+      () => mockGameUseCase
     );
 
     render(<GameScreen />);
@@ -134,7 +134,7 @@ describe('GameScreen', () => {
     };
 
     vi.mocked(await import('@/usecases/game/usecase')).GameUseCase.mockImplementation(
-      () => mockGameUseCase as any
+      () => mockGameUseCase
     );
 
     render(<GameScreen />);
@@ -166,7 +166,7 @@ describe('GameScreen', () => {
     };
 
     vi.mocked(await import('@/usecases/game/usecase')).GameUseCase.mockImplementation(
-      () => mockGameUseCase as any
+      () => mockGameUseCase
     );
 
     render(<GameScreen />);
@@ -200,7 +200,7 @@ describe('GameScreen', () => {
     };
 
     vi.mocked(await import('@/usecases/game/usecase')).GameUseCase.mockImplementation(
-      () => mockGameUseCase as any
+      () => mockGameUseCase
     );
 
     render(<GameScreen />);

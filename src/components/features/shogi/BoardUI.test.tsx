@@ -1,8 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
-import { CellPosition } from '@/domain/models/position/types';
-import { IPiece } from '@/domain/models/piece/interface';
+import { PieceType, Player } from '@/domain/models/piece/types';
 
 import { BoardUI, KANJI_NUMBERS } from './BoardUI';
 
@@ -39,15 +38,15 @@ describe('BoardUI', () => {
     
     // 左上のマス（9一）をクリック
     fireEvent.click(cells[0]);
-    expect(handleCellClick).toHaveBeenCalledWith({ row: 0, col: 8 });
+    expect(handleCellClick).toHaveBeenCalledWith({ row: 1, column: 9 });
     
     // 右下のマス（1九）をクリック
     fireEvent.click(cells[80]);
-    expect(handleCellClick).toHaveBeenCalledWith({ row: 8, col: 0 });
+    expect(handleCellClick).toHaveBeenCalledWith({ row: 9, column: 1 });
   });
 
   it('選択されたマスがハイライトされる', () => {
-    render(<BoardUI selectedCell={{ row: 4, col: 4 }} />);
+    render(<BoardUI selectedCell={{ row: 4, column: 4 }} />);
     
     const cells = screen.getAllByRole('button');
     const selectedCellIndex = getCellIndex(4, 4); // 5行5列目
@@ -57,20 +56,20 @@ describe('BoardUI', () => {
   });
 
   it('移動可能なマスがハイライトされる', () => {
-    const highlightedCells: CellPosition[] = [
-      { row: 3, col: 4 },
-      { row: 5, col: 4 }
+    const highlightedCells = [
+      { row: 3, column: 4 },
+      { row: 5, column: 4 }
     ];
     render(<BoardUI highlightedCells={highlightedCells} />);
     
     const cells = screen.getAllByRole('button');
     const firstHighlightedIndex = getCellIndex(
       highlightedCells[0].row,
-      highlightedCells[0].col
+      highlightedCells[0].column
     );
     const secondHighlightedIndex = getCellIndex(
       highlightedCells[1].row,
-      highlightedCells[1].col
+      highlightedCells[1].column
     );
     const firstHighlighted = cells[firstHighlightedIndex];
     const secondHighlighted = cells[secondHighlightedIndex];
@@ -89,29 +88,29 @@ describe('BoardUI', () => {
     const pieces = [
       {
         piece: {
-          type: 'PAWN' as const,
-          player: 'SENTE' as const,
-          position: { row: 6, col: 4 },
+          type: PieceType.PAWN,
+          player: Player.SENTE,
+          position: { row: 6, column: 4 },
           getValidMoves: vi.fn(),
           promote: vi.fn(),
           clone: vi.fn(),
           equals: vi.fn(),
           isPromoted: vi.fn(() => false),
         },
-        position: { row: 6, col: 4 },
+        position: { row: 6, column: 4 },
       },
       {
         piece: {
-          type: 'KING' as const,
-          player: 'GOTE' as const,
-          position: { row: 0, col: 4 },
+          type: PieceType.KING,
+          player: Player.GOTE,
+          position: { row: 0, column: 4 },
           getValidMoves: vi.fn(),
           promote: vi.fn(),
           clone: vi.fn(),
           equals: vi.fn(),
           isPromoted: vi.fn(() => false),
         },
-        position: { row: 0, col: 4 },
+        position: { row: 0, column: 4 },
       },
     ];
 
@@ -127,16 +126,16 @@ describe('BoardUI', () => {
   it('駒をクリックするとonPieceClickが呼ばれる', () => {
     const handlePieceClick = vi.fn();
     const piece = {
-      type: 'PAWN' as const,
-      player: 'SENTE' as const,
-      position: { row: 6, col: 4 },
+      type: PieceType.PAWN,
+      player: Player.SENTE,
+      position: { row: 6, column: 4 },
       getValidMoves: vi.fn(),
       promote: vi.fn(),
       clone: vi.fn(),
       equals: vi.fn(),
       isPromoted: vi.fn(() => false),
     };
-    const pieces = [{ piece, position: { row: 6, col: 4 } }];
+    const pieces = [{ piece, position: { row: 6, column: 4 } }];
 
     render(<BoardUI pieces={pieces} onPieceClick={handlePieceClick} />);
 

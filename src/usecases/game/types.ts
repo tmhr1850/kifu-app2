@@ -1,7 +1,6 @@
 import { Board } from '@/domain/models/board/board'
 import { IPiece } from '@/domain/models/piece/interface'
 import { Player, PieceType } from '@/domain/models/piece/types'
-import { Position } from '@/domain/models/position/position'
 
 export type GameStatus = 'playing' | 'check' | 'checkmate' | 'stalemate' | 'resigned'
 
@@ -57,6 +56,11 @@ export interface IGameUseCase {
   dropPiece(pieceType: PieceType, to: UIPosition): MoveResult
   getGameState(): GameState
   getLegalMoves(from?: UIPosition): UIPosition[]
-  canPromote(piece: IPiece, to: Position): boolean
+  canPromote(from: UIPosition, to: UIPosition): boolean
   resign(player: Player): void
+  getLegalDropPositions(
+    pieceType: PieceType,
+    player: Player,
+  ): UIPosition[]
+  getBoardPieces: () => { piece: IPiece; position: UIPosition }[]
 }

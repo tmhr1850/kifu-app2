@@ -15,11 +15,27 @@ import {
 } from './types'
 
 export class GameUseCase implements IGameUseCase {
-  private gameState: GameState | null = null
+  private gameState!: GameState
   private gameRules: GameRules
 
   constructor() {
     this.gameRules = new GameRules()
+    this._initializeState()
+  }
+
+  private _initializeState(): void {
+    const board = Board.createInitialBoard()
+    this.gameState = {
+      board: board as Board,
+      currentPlayer: Player.SENTE,
+      history: [],
+      capturedPieces: {
+        sente: [],
+        gote: []
+      },
+      status: 'playing',
+      isCheck: false
+    }
   }
 
   // UIとドメインの座標変換
@@ -35,20 +51,7 @@ export class GameUseCase implements IGameUseCase {
   }
 
   startNewGame(): GameState {
-    const board = Board.createInitialBoard()
-    
-    this.gameState = {
-      board: board as Board,
-      currentPlayer: Player.SENTE,
-      history: [],
-      capturedPieces: {
-        sente: [],
-        gote: []
-      },
-      status: 'playing',
-      isCheck: false
-    }
-
+    this._initializeState()
     return this.gameState
   }
 
@@ -59,6 +62,7 @@ export class GameUseCase implements IGameUseCase {
         error: new Error('ゲームが開始されていません')
       }
     }
+    const currentGameState = this.gameState
 
     let from: Position
     let to: Position
@@ -70,14 +74,14 @@ export class GameUseCase implements IGameUseCase {
       return { success: false, error: err }
     }
 
-    const piece = this.gameState.board.getPiece(from)
+    const piece = currentGameState.board.getPiece(from)
     if (!piece) {
       return {
         success: false,
         error: new InvalidMoveError('移動する駒が存在しません')
       }
     }
-    if (piece.player !== this.gameState.currentPlayer) {
+    if (piece.player !== currentGameState.currentPlayer) {
       return {
         success: false,
         error: new InvalidMoveError('自分の駒しか動かせません')
@@ -85,8 +89,8 @@ export class GameUseCase implements IGameUseCase {
     }
 
     const legalMoves = this.gameRules.generateLegalMoves(
-      this.gameState.board,
-      this.gameState.currentPlayer,
+      currentGameState.board,
+      currentGameState.currentPlayer,
     )
 
     const isLegalMove = legalMoves.some(
@@ -105,48 +109,57 @@ export class GameUseCase implements IGameUseCase {
     }
 
     // 成り処理のチェック
-    if (isPromotion && !this.canPromote(piece, to)) {
+    if (isPromotion && !this.canPromote(fromUI, toUI)) {
       return {
         success: false,
         error: new InvalidMoveError('この駒は成ることができません')
       }
     }
 
-    const capturedPiece = this.gameState.board.getPiece(to)
+    const capturedPiece = currentGameState.board.getPiece(to)
+    
+    let newCapturedPieces = currentGameState.capturedPieces
     if (capturedPiece) {
-      const capturedList = this.gameState.currentPlayer === Player.SENTE
-        ? this.gameState.capturedPieces.sente
-        : this.gameState.capturedPieces.gote
+      const capturedList = currentGameState.currentPlayer === Player.SENTE
+        ? currentGameState.capturedPieces.sente
+        : currentGameState.capturedPieces.gote
       
       const unpromotedType = this.getUnpromotedType(capturedPiece.type)
       const newCapturedPiece = createPiece(
         unpromotedType,
-        this.gameState.currentPlayer,
+        currentGameState.currentPlayer,
         null, // 持ち駒は位置情報なし
       )
-      capturedList.push(newCapturedPiece)
+      
+      const newCapturedList = [...capturedList, newCapturedPiece]
+      newCapturedPieces = {
+        ...currentGameState.capturedPieces,
+        [currentGameState.currentPlayer]: newCapturedList,
+      }
     }
 
     const moveDefinition: Move = { from, to, isPromotion }
-    const newBoard = this.gameState.board.applyMove(moveDefinition)
-    this.gameState.board = newBoard as Board
+    const newBoard = currentGameState.board.applyMove(moveDefinition)
 
     const gameMove: GameMove = {
       from: fromUI,
       to: toUI,
-      player: this.gameState.currentPlayer,
+      player: currentGameState.currentPlayer,
       piece: { type: piece.type, owner: piece.player },
       captured: capturedPiece ? { type: capturedPiece.type, owner: capturedPiece.player } : undefined,
       isPromotion,
       timestamp: new Date()
     }
-    this.gameState.history.push(gameMove)
 
-    this.gameState.currentPlayer = this.gameState.currentPlayer === Player.SENTE
-      ? Player.GOTE
-      : Player.SENTE
-
-    this.updateGameStatus()
+    const newGameState: GameState = {
+      ...currentGameState,
+      board: newBoard as Board,
+      currentPlayer: currentGameState.currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE,
+      history: [...currentGameState.history, gameMove],
+      capturedPieces: newCapturedPieces,
+    }
+    
+    this.gameState = this.updateGameStatus(newGameState)
 
     return {
       success: true,
@@ -155,7 +168,8 @@ export class GameUseCase implements IGameUseCase {
   }
 
   dropPiece(pieceType: PieceType, toUI: UIPosition): MoveResult {
-    if (!this.gameState) {
+    const currentGameState = this.gameState
+    if (!currentGameState) {
       return {
         success: false,
         error: new Error('ゲームが開始されていません')
@@ -164,9 +178,9 @@ export class GameUseCase implements IGameUseCase {
 
     const to = this.toDomainPos(toUI)
 
-    const capturedList = this.gameState.currentPlayer === Player.SENTE
-      ? this.gameState.capturedPieces.sente
-      : this.gameState.capturedPieces.gote
+    const capturedList = currentGameState.currentPlayer === Player.SENTE
+      ? currentGameState.capturedPieces.sente
+      : currentGameState.capturedPieces.gote
 
     const pieceIndex = capturedList.findIndex((p) => p.type === pieceType && !p.position)
     if (pieceIndex === -1) {
@@ -176,14 +190,14 @@ export class GameUseCase implements IGameUseCase {
       }
     }
 
-    if (this.gameState.board.getPiece(to)) {
+    if (currentGameState.board.getPiece(to)) {
       return {
         success: false,
         error: new InvalidMoveError('その場所には既に駒があります')
       }
     }
 
-    if (pieceType === PieceType.PAWN && this.gameRules.isNifu(this.gameState.board, to.column, this.gameState.currentPlayer)) {
+    if (pieceType === PieceType.PAWN && this.gameRules.isNifu(currentGameState.board, to.column, currentGameState.currentPlayer)) {
       return {
         success: false,
         error: new InvalidMoveError('二歩です')
@@ -191,23 +205,33 @@ export class GameUseCase implements IGameUseCase {
     }
 
     const pieceToDrop = capturedList[pieceIndex]
-    const newPiece = pieceToDrop.clone(to) // 新しい位置で駒をクローン
-    capturedList.splice(pieceIndex, 1) // 配列から安全に削除
-    this.gameState.board.setPiece(to, newPiece)
+    
+    const newCapturedList = [...capturedList]
+    newCapturedList.splice(pieceIndex, 1)
+    const newCapturedPieces = {
+      ...currentGameState.capturedPieces,
+      [currentGameState.currentPlayer]: newCapturedList,
+    }
+
+    const newBoard = currentGameState.board.clone() as Board
+    newBoard.setPiece(to, pieceToDrop.clone(to))
 
     const gameMove: GameMove = {
       drop: pieceType,
       to: toUI,
-      player: this.gameState.currentPlayer,
+      player: currentGameState.currentPlayer,
       timestamp: new Date()
     }
-    this.gameState.history.push(gameMove)
+    
+    const newGameState: GameState = {
+      ...currentGameState,
+      board: newBoard,
+      currentPlayer: currentGameState.currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE,
+      history: [...currentGameState.history, gameMove],
+      capturedPieces: newCapturedPieces,
+    }
 
-    this.gameState.currentPlayer = this.gameState.currentPlayer === Player.SENTE
-      ? Player.GOTE
-      : Player.SENTE
-
-    this.updateGameStatus()
+    this.gameState = this.updateGameStatus(newGameState)
 
     return {
       success: true,
@@ -216,10 +240,25 @@ export class GameUseCase implements IGameUseCase {
   }
 
   getGameState(): GameState {
-    if (!this.gameState) {
-      throw new Error('ゲームが開始されていません')
-    }
     return this.gameState
+  }
+
+  getBoardPieces(): { piece: IPiece; position: UIPosition }[] {
+    if (!this.gameState) {
+      return []
+    }
+
+    const pieces: { piece: IPiece; position: UIPosition }[] = []
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        const domainPos = new Position(row, col)
+        const piece = this.gameState.board.getPiece(domainPos)
+        if (piece) {
+          pieces.push({ piece, position: this.toUIPos(domainPos) })
+        }
+      }
+    }
+    return pieces
   }
 
   getLegalMoves(fromUI?: UIPosition): UIPosition[] {
@@ -233,7 +272,18 @@ export class GameUseCase implements IGameUseCase {
     return legalMoves.map((m) => this.toUIPos(new Position(m.to.row, m.to.column)))
   }
 
-  canPromote(piece: IPiece, to: Position): boolean {
+  canPromote(from: UIPosition, to: UIPosition): boolean {
+    if (!this.gameState) {
+      return false
+    }
+    const fromDomain = this.toDomainPos(from)
+    const toDomain = this.toDomainPos(to)
+    const piece = this.gameState.board.getPiece(fromDomain)
+
+    if (!piece) {
+      return false
+    }
+
     // 金、王、すでに成ってる駒は成れない
     const unpromotablePieces: PieceType[] = [
       PieceType.GOLD,
@@ -247,56 +297,94 @@ export class GameUseCase implements IGameUseCase {
     const promotionZoneStart = player === Player.SENTE ? 0 : 6
     const promotionZoneEnd = player === Player.SENTE ? 2 : 8
 
-    const from = piece.position
-    if (!from) return false // 持ち駒は成れない
+    if (
+      (toDomain.row >= promotionZoneStart && toDomain.row <= promotionZoneEnd) ||
+      (fromDomain.row >= promotionZoneStart && fromDomain.row <= promotionZoneEnd)
+    ) {
+      return true
+    }
 
-    const isMovingToPromotionZone =
-      to.row >= promotionZoneStart && to.row <= promotionZoneEnd
-    const isMovingFromPromotionZone =
-      from.row >= promotionZoneStart && from.row <= promotionZoneEnd
+    return false
+  }
 
-    return isMovingToPromotionZone || isMovingFromPromotionZone
+  getLegalDropPositions(
+    pieceType: PieceType,
+    player: Player,
+  ): UIPosition[] {
+    const state = this.gameState;
+    if (!state) {
+      return []
+    }
+
+    const emptyPositions: UIPosition[] = []
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        const domainPos = new Position(row, col)
+        if (!state.board.getPiece(domainPos)) {
+          emptyPositions.push(this.toUIPos(domainPos))
+        }
+      }
+    }
+
+    return emptyPositions.filter((uiPos) => {
+      const domainPos = this.toDomainPos(uiPos)
+      // 歩、香車、桂馬の打てない段をチェック
+      if (player === Player.SENTE) {
+        if (
+          (pieceType === PieceType.PAWN || pieceType === PieceType.LANCE) &&
+          uiPos.row === 1
+        )
+          return false
+        if (pieceType === PieceType.KNIGHT && uiPos.row <= 2) return false
+      } else {
+        if (
+          (pieceType === PieceType.PAWN || pieceType === PieceType.LANCE) &&
+          uiPos.row === 9
+        )
+          return false
+        if (pieceType === PieceType.KNIGHT && uiPos.row >= 8) return false
+      }
+
+      // 二歩チェック
+      if (
+        pieceType === PieceType.PAWN &&
+        this.gameRules.isNifu(state.board, domainPos.column, player)
+      ) {
+        return false
+      }
+
+      return true
+    })
   }
 
   resign(_player: Player): void {
-    if (!this.gameState) {
-      throw new Error('ゲームが開始されていません')
-    }
-
-    this.gameState.status = 'resigned'
-    // TODO: 勝者を記録するなどの処理
-  }
-
-
-  private updateGameStatus(): void {
-    if (!this.gameState) {
-      return
-    }
-
-    // 王手チェック：現在のプレイヤー（次に指す番の人）が王手されているかチェック
-    const nextPlayer = this.gameState.currentPlayer
-    this.gameState.isCheck = this.gameRules.isInCheck(
-      this.gameState.board,
-      nextPlayer
-    )
-
-    // 詰みチェック
-    if (this.gameState.isCheck) {
-      const isCheckmate = this.gameRules.isCheckmate(
-        this.gameState.board,
-        nextPlayer
-      )
-      
-      if (isCheckmate) {
-        this.gameState.status = 'checkmate'
-      } else {
-        this.gameState.status = 'check'
+    if (this.gameState) {
+      this.gameState = {
+        ...this.gameState,
+        status: 'resigned',
+        winner: _player === Player.SENTE ? Player.GOTE : Player.SENTE
       }
-    } else {
-      this.gameState.status = 'playing'
     }
   }
 
+  private updateGameStatus(gameState: GameState): GameState {
+    const newGameState = { ...gameState }
+    const currentPlayer = newGameState.currentPlayer
+    const opponentPlayer = currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE
+    
+    newGameState.isCheck = this.gameRules.isInCheck(newGameState.board, currentPlayer)
+
+    const legalMoves = this.gameRules.generateLegalMoves(newGameState.board, currentPlayer)
+    if (legalMoves.length === 0) {
+      if (newGameState.isCheck) {
+        newGameState.status = 'checkmate'
+        newGameState.winner = opponentPlayer
+      } else {
+        newGameState.status = 'stalemate'
+      }
+    }
+    return newGameState
+  }
 
   private getUnpromotedType(type: PieceType): PieceType {
     switch (type) {

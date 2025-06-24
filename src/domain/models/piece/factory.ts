@@ -1,20 +1,18 @@
 import { IPiece } from './interface';
-import {
-  King,
-  Rook,
-  Bishop,
-  Gold,
-  Silver,
-  Knight,
-  Lance,
-  Pawn,
-  Dragon,
-  Horse,
-  PromotedSilver,
-  PromotedKnight,
-  PromotedLance,
-  Tokin,
-} from './pieces';
+import { Bishop } from './pieces/bishop';
+import { Dragon } from './pieces/dragon';
+import { Gold } from './pieces/gold';
+import { Horse } from './pieces/horse';
+import { King } from './pieces/king';
+import { Knight } from './pieces/knight';
+import { Lance } from './pieces/lance';
+import { Pawn } from './pieces/pawn';
+import { PromotedKnight } from './pieces/promoted-knight';
+import { PromotedLance } from './pieces/promoted-lance';
+import { PromotedSilver } from './pieces/promoted-silver';
+import { Rook } from './pieces/rook';
+import { Silver } from './pieces/silver';
+import { Tokin } from './pieces/tokin';
 import { PieceType, Player, Position } from './types';
 
 /**
