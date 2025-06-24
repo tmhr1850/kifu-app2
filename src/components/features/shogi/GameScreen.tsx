@@ -7,7 +7,7 @@ import { CapturedPiece } from '@/components/ui/types';
 import { IPiece } from '@/domain/models/piece/interface';
 import { Player, PieceType } from '@/domain/models/piece/types';
 import { UIPosition } from '@/types/common';
-import { GameUseCase } from '@/usecases/game/usecase';
+import { GameManager } from '@/usecases/gamemanager';
 
 import { BoardUI } from './BoardUI';
 import { PromotionDialog } from './PromotionDialog';
@@ -19,14 +19,30 @@ interface PendingMove {
 }
 
 export const GameScreen: React.FC = () => {
-  const [gameUseCase] = useState(() => new GameUseCase());
-  const [gameState, setGameState] = useState(gameUseCase.getGameState());
+  const [gameManager] = useState(() => new GameManager());
+  const [managerState, setManagerState] = useState(gameManager.getState());
+  const gameState = managerState.gameState;
   const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);
   const [selectedCapturedPiece, setSelectedCapturedPiece] = useState<PieceType | null>(null);
   const [highlightedCells, setHighlightedCells] = useState<UIPosition[]>([]);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [showResignDialog, setShowResignDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // 初期化時に保存されたゲームを読み込む
+  useEffect(() => {
+    const loadSavedGame = async () => {
+      const savedState = await gameManager.loadGame();
+      if (savedState) {
+        setManagerState(savedState);
+      } else {
+        // 保存されたゲームがない場合は新規ゲームを開始
+        const newState = await gameManager.startNewGame();
+        setManagerState(newState);
+      }
+    };
+    loadSavedGame();
+  }, [gameManager]);
 
   // エラーメッセージを3秒後に自動で消す
   useEffect(() => {
@@ -37,6 +53,13 @@ export const GameScreen: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
+
+  // GameManagerのエラーを監視
+  useEffect(() => {
+    if (managerState.error) {
+      setErrorMessage(managerState.error.message);
+    }
+  }, [managerState.error]);
 
   const capturedSente = useMemo((): CapturedPiece[] => {
     if (!gameState) return [];
@@ -57,24 +80,34 @@ export const GameScreen: React.FC = () => {
   }, [gameState]);
 
   // 盤面の駒を配列に変換
-  const boardPieces = useMemo(
-    () => gameUseCase.getBoardPieces(),
-    [gameUseCase]
-  );
+  const boardPieces = useMemo(() => {
+    const pieces: { piece: IPiece; position: UIPosition }[] = [];
+    for (let rank = 1; rank <= 9; rank++) {
+      for (let file = 1; file <= 9; file++) {
+        const piece = gameState.board.getPieceAt({ file, rank });
+        if (piece) {
+          pieces.push({ piece, position: { file, rank } });
+        }
+      }
+    }
+    return pieces;
+  }, [gameState]);
 
   // セルがクリックされた時の処理
-  const handleCellClick = useCallback((position: UIPosition) => {
+  const handleCellClick = useCallback(async (position: UIPosition) => {
+    // AIが思考中の場合は操作を受け付けない
+    if (managerState.isAIThinking) {
+      return;
+    }
+
     // 持ち駒が選択されている場合
     if (selectedCapturedPiece) {
-      const result = gameUseCase.dropPiece(selectedCapturedPiece, position);
-      if (result.success && result.gameState) {
-        setGameState(result.gameState);
+      const newState = await gameManager.dropPiece(selectedCapturedPiece, position);
+      setManagerState(newState);
+      if (!newState.error) {
         setSelectedCapturedPiece(null);
         setHighlightedCells([]);
         setErrorMessage(null); // 成功時はエラーメッセージをクリア
-      } else {
-        // エラーメッセージを表示
-        setErrorMessage(result.error?.message || 'そこには駒を置けません');
       }
       return;
     }
@@ -85,30 +118,31 @@ export const GameScreen: React.FC = () => {
       const to = position;
 
       // 成りが可能かチェック
-      if (gameUseCase.canPromote(from, to)) {
+      if (gameManager.canPromote(from, to)) {
         setPendingMove({ from, to });
       } else {
         // 通常の移動
-        const result = gameUseCase.movePiece(from, to);
-        if (result.success && result.gameState) {
-          setGameState(result.gameState);
+        const newState = await gameManager.movePiece(from, to);
+        setManagerState(newState);
+        if (!newState.error) {
           setErrorMessage(null); // 成功時はエラーメッセージをクリア
-        } else {
-          // エラーメッセージを表示
-          setErrorMessage(result.error?.message || 'その移動はできません');
         }
       }
 
       setSelectedCell(null);
       setHighlightedCells([]);
     }
-  }, [selectedCell, selectedCapturedPiece, gameUseCase]);
+  }, [selectedCell, selectedCapturedPiece, gameManager, managerState.isAIThinking]);
 
   // 駒がクリックされた時の処理
   const handlePieceClick = useCallback((piece: IPiece) => {
-    if (!gameState) return;
-    // 自分の駒のみ選択可能
-    if (piece.player !== gameState.currentPlayer) {
+    if (!gameState || managerState.isAIThinking) return;
+    // プレイヤーの駒のみ選択可能
+    if (piece.player !== managerState.playerColor) {
+      return;
+    }
+    // 現在の手番でない場合は選択不可
+    if (gameState.currentPlayer !== managerState.playerColor) {
       return;
     }
 
@@ -117,56 +151,59 @@ export const GameScreen: React.FC = () => {
       const uiPos = clickedPiece.position;
       setSelectedCell(uiPos);
       setSelectedCapturedPiece(null);
-      const validMoves = gameUseCase.getLegalMoves(uiPos);
+      const validMoves = gameManager.getLegalMoves(uiPos);
       setHighlightedCells(validMoves);
     }
-  }, [gameUseCase, gameState, boardPieces]);
+  }, [gameManager, gameState, boardPieces, managerState.playerColor, managerState.isAIThinking]);
 
   // 持ち駒がクリックされた時の処理
   const handleCapturedPieceClick = useCallback((pieceType: PieceType) => {
-    if (!gameState) return;
+    if (!gameState || managerState.isAIThinking) return;
+    // 現在の手番でない場合は選択不可
+    if (gameState.currentPlayer !== managerState.playerColor) {
+      return;
+    }
     
     setSelectedCapturedPiece(pieceType);
     setSelectedCell(null);
 
-    const validDropPositions = gameUseCase.getLegalDropPositions(
-      pieceType,
-      gameState.currentPlayer
-    );
+    const validDropPositions = gameManager.getLegalDropPositions(pieceType);
     setHighlightedCells(validDropPositions);
-  }, [gameUseCase, gameState]);
+  }, [gameManager, gameState, managerState.playerColor, managerState.isAIThinking]);
 
   // 成り選択の処理
-  const handlePromotionChoice = useCallback((promote: boolean) => {
+  const handlePromotionChoice = useCallback(async (promote: boolean) => {
     if (pendingMove) {
-      const result = gameUseCase.movePiece(pendingMove.from, pendingMove.to, promote);
-      if (result.success && result.gameState) {
-        setGameState(result.gameState);
+      const newState = await gameManager.movePiece(pendingMove.from, pendingMove.to, promote);
+      setManagerState(newState);
+      if (!newState.error) {
         setErrorMessage(null); // 成功時はエラーメッセージをクリア
-      } else {
-        // エラーメッセージを表示
-        setErrorMessage(result.error?.message || '成りの処理でエラーが発生しました');
       }
       setPendingMove(null);
     }
-  }, [pendingMove, gameUseCase]);
+  }, [pendingMove, gameManager]);
 
   // 新規対局
-  const handleNewGame = useCallback(() => {
-    setGameState(gameUseCase.startNewGame());
+  const handleNewGame = useCallback(async () => {
+    // 保存されたゲームをクリア
+    gameManager.clearSavedGame();
+    
+    const newState = await gameManager.startNewGame();
+    setManagerState(newState);
     setSelectedCell(null);
     setSelectedCapturedPiece(null);
     setHighlightedCells([]);
-  }, [gameUseCase]);
+    setErrorMessage(null);
+  }, [gameManager]);
 
   // 投了
-  const handleResign = useCallback(() => {
+  const handleResign = useCallback(async () => {
     if (gameState) {
-      gameUseCase.resign(gameState.currentPlayer);
-      setGameState(gameUseCase.getGameState());
+      const newState = await gameManager.resign(managerState.playerColor);
+      setManagerState(newState);
       setShowResignDialog(false);
     }
-  }, [gameUseCase, gameState]);
+  }, [gameManager, gameState, managerState.playerColor]);
 
   if (!gameState) {
     return <div>Loading...</div>;
@@ -188,6 +225,9 @@ export const GameScreen: React.FC = () => {
             <h1 className="text-3xl font-bold mb-2">将棋ゲーム</h1>
             <div className="flex justify-center items-center gap-4">
               <span className="text-xl font-semibold">{currentPlayerText}</span>
+              {managerState.isAIThinking && (
+                <span className="text-blue-600 font-semibold">AIが考え中...</span>
+              )}
               {gameState.isCheck && gameState.status === 'playing' && (
                 <span className="text-red-600 font-bold">王手！</span>
               )}
@@ -208,16 +248,16 @@ export const GameScreen: React.FC = () => {
               <CapturedPiecesUI
                 capturedPieces={capturedGote}
                 player={Player.GOTE}
-                isMyTurn={gameState.currentPlayer === Player.GOTE}
+                isMyTurn={managerState.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE && !managerState.isAIThinking}
                 onPieceClick={handleCapturedPieceClick}
                 selectedPiece={
-                  gameState.currentPlayer === Player.GOTE ? selectedCapturedPiece : null
+                  managerState.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE ? selectedCapturedPiece : null
                 }
               />
             </div>
 
             {/* 将棋盤 */}
-            <div className="order-1 lg:order-2" role="grid">
+            <div className="order-1 lg:order-2 relative" role="grid">
               <BoardUI
                 pieces={boardPieces}
                 onCellClick={handleCellClick}
@@ -225,6 +265,14 @@ export const GameScreen: React.FC = () => {
                 highlightedCells={highlightedCells}
                 selectedCell={selectedCell}
               />
+              {/* AI思考中のオーバーレイ */}
+              {managerState.isAIThinking && (
+                <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center rounded-lg">
+                  <div className="bg-white px-4 py-2 rounded-lg shadow-lg">
+                    <span className="text-lg font-semibold text-blue-600">AIが考え中...</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 先手の持ち駒 */}
@@ -233,10 +281,10 @@ export const GameScreen: React.FC = () => {
               <CapturedPiecesUI
                 capturedPieces={capturedSente}
                 player={Player.SENTE}
-                isMyTurn={gameState.currentPlayer === Player.SENTE}
+                isMyTurn={managerState.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE && !managerState.isAIThinking}
                 onPieceClick={handleCapturedPieceClick}
                 selectedPiece={
-                  gameState.currentPlayer === Player.SENTE ? selectedCapturedPiece : null
+                  managerState.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE ? selectedCapturedPiece : null
                 }
               />
             </div>
@@ -246,14 +294,15 @@ export const GameScreen: React.FC = () => {
           <div className="mt-6 flex justify-center gap-4">
             <button
               onClick={handleNewGame}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={managerState.isAIThinking}
             >
               新規対局
             </button>
             <button
               onClick={() => setShowResignDialog(true)}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              disabled={gameState.status === 'checkmate'}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={gameState.status === 'checkmate' || gameState.status === 'resigned' || managerState.isAIThinking}
             >
               投了
             </button>
