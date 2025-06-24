@@ -47,6 +47,12 @@ export interface IPiece {
    * @returns 等価である場合true
    */
   equals(otherPiece: IPiece | null): boolean;
+
+  /**
+   * 駒がすでに成り駒かチェック
+   * @returns 成り駒の場合true
+   */
+  isPromoted(): boolean;
 }
 
 /**

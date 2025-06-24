@@ -24,6 +24,9 @@ export class GameUseCase implements IGameUseCase {
 
   // UIとドメインの座標変換
   private toDomainPos(pos: UIPosition): Position {
+    if (pos.row < 1 || pos.row > 9 || pos.column < 1 || pos.column > 9) {
+      throw new Error('範囲外の座標です')
+    }
     return new Position(pos.row - 1, pos.column - 1)
   }
 
@@ -57,21 +60,27 @@ export class GameUseCase implements IGameUseCase {
       }
     }
 
-    const from = this.toDomainPos(fromUI)
-    const to = this.toDomainPos(toUI)
+    let from: Position
+    let to: Position
+    try {
+      from = this.toDomainPos(fromUI)
+      to = this.toDomainPos(toUI)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error('Invalid arguments')
+      return { success: false, error: err }
+    }
 
     const piece = this.gameState.board.getPiece(from)
     if (!piece) {
       return {
         success: false,
-        error: new InvalidMoveError('移動元に駒がありません')
+        error: new InvalidMoveError('移動する駒が存在しません')
       }
     }
-
     if (piece.player !== this.gameState.currentPlayer) {
       return {
         success: false,
-        error: new InvalidMoveError('相手の番です')
+        error: new InvalidMoveError('自分の駒しか動かせません')
       }
     }
 
