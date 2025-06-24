@@ -17,7 +17,15 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(node:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh api:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run view:*)",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 90 npm run build)"
     ],
     "deny": []
   }

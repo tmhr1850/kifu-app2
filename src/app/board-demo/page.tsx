@@ -3,18 +3,18 @@
 import { useState } from 'react';
 
 import { BoardUI } from '@/components/features/shogi';
-import { CellPosition } from '@/domain/models/position/types';
+import { UIPosition } from '@/types/common';
 
 export default function BoardDemoPage() {
-  const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
-  const [highlightedCells, setHighlightedCells] = useState<CellPosition[]>([]);
+  const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);
+  const [highlightedCells, setHighlightedCells] = useState<UIPosition[]>([]);
   
-  const handleCellClick = (position: CellPosition) => {
+  const handleCellClick = (position: UIPosition) => {
     setSelectedCell(position);
     
     // デモ用：選択したマスの周囲をハイライト
-    const newHighlights: CellPosition[] = [];
-    const { row, col } = position;
+    const newHighlights: UIPosition[] = [];
+    const { row, column } = position;
     
     // 上下左右のマスをハイライト
     const directions = [
@@ -26,9 +26,9 @@ export default function BoardDemoPage() {
     
     directions.forEach(({ dr, dc }) => {
       const newRow = row + dr;
-      const newCol = col + dc;
-      if (newRow >= 0 && newRow < 9 && newCol >= 0 && newCol < 9) {
-        newHighlights.push({ row: newRow, col: newCol });
+      const newCol = column + dc;
+      if (newRow >= 1 && newRow <= 9 && newCol >= 1 && newCol <= 9) {
+        newHighlights.push({ row: newRow, column: newCol });
       }
     });
     
@@ -56,8 +56,8 @@ export default function BoardDemoPage() {
         <div className="mt-8 text-center">
           {selectedCell && (
             <p className="text-lg">
-              選択中: {['一', '二', '三', '四', '五', '六', '七', '八', '九'][selectedCell.row]}
-              {9 - selectedCell.col}
+              選択中: {['一', '二', '三', '四', '五', '六', '七', '八', '九'][selectedCell.row - 1]}
+              {selectedCell.column}
             </p>
           )}
         </div>

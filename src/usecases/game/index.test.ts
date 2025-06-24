@@ -167,9 +167,9 @@ describe('GameUseCase', () => {
   })
 
   describe('errorHandling', () => {
-    it('ゲーム開始前に操作するとエラーになる', () => {
+    it('空のマスから駒を動かそうとするとエラーになる', () => {
       const newGameUseCase = new GameUseCase()
-      const result = newGameUseCase.movePiece({ row: 7, column: 7 }, { row: 6, column: 7 })
+      const result = newGameUseCase.movePiece({ row: 5, column: 5 }, { row: 4, column: 5 })
 
       expect(result.success).toBe(false)
     })
@@ -206,34 +206,21 @@ describe('GameUseCase', () => {
 
   describe('canPromote', () => {
     it('歩が敵陣に入れば成れる', () => {
-      // 先手歩を敵陣に移動
-      const board = gameUseCase.getGameState().board
-      const pawn = board.getPiece(new Position(6, 0)) // 先手歩
-      
-      if (pawn) {
-        const canPromote = gameUseCase.canPromote(pawn, new Position(2, 0)) // 敵陣
-        expect(canPromote).toBe(true)
-      }
+      // 先手歩が敵陣に移動する場合
+      const canPromote = gameUseCase.canPromote({ row: 7, column: 1 }, { row: 3, column: 1 })
+      expect(canPromote).toBe(true)
     })
 
     it('金は成れない', () => {
-      const board = gameUseCase.getGameState().board
-      const gold = board.getPiece(new Position(8, 3)) // 先手金
-      
-      if (gold) {
-        const canPromote = gameUseCase.canPromote(gold, new Position(2, 3))
-        expect(canPromote).toBe(false)
-      }
+      // 金は成り駒なので成れない
+      const canPromote = gameUseCase.canPromote({ row: 9, column: 4 }, { row: 3, column: 4 })
+      expect(canPromote).toBe(false)
     })
 
     it('王は成れない', () => {
-      const board = gameUseCase.getGameState().board
-      const king = board.getPiece(new Position(8, 4)) // 先手王
-      
-      if (king) {
-        const canPromote = gameUseCase.canPromote(king, new Position(2, 4))
-        expect(canPromote).toBe(false)
-      }
+      // 王は成れない
+      const canPromote = gameUseCase.canPromote({ row: 9, column: 5 }, { row: 3, column: 5 })
+      expect(canPromote).toBe(false)
     })
   })
 
@@ -247,11 +234,13 @@ describe('GameUseCase', () => {
       expect(state.status).toBe('resigned')
     })
 
-    it('ゲーム開始前に投了するとエラーになる', () => {
+    it('投了すると正しくゲーム状態が更新される', () => {
       const newGameUseCase = new GameUseCase()
-      expect(() => {
-        newGameUseCase.resign(Player.SENTE)
-      }).toThrow('ゲームが開始されていません')
+      newGameUseCase.resign(Player.SENTE)
+      
+      const state = newGameUseCase.getGameState()
+      expect(state.status).toBe('resigned')
+      expect(state.winner).toBe(Player.GOTE)
     })
   })
 

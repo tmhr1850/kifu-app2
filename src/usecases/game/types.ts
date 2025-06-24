@@ -1,17 +1,9 @@
 import { Board } from '@/domain/models/board/board'
 import { IPiece } from '@/domain/models/piece/interface'
 import { Player, PieceType } from '@/domain/models/piece/types'
-import { Position } from '@/domain/models/position/position'
+import { UIPosition, GameStatus } from '@/types/common'
 
-export type GameStatus = 'playing' | 'check' | 'checkmate' | 'stalemate' | 'resigned'
-
-/**
- * UI層で扱う座標 (1-9)
- */
-export interface UIPosition {
-  row: number
-  column: number
-}
+export type { GameStatus, UIPosition }
 
 export interface GameMove {
   drop?: PieceType
@@ -57,6 +49,11 @@ export interface IGameUseCase {
   dropPiece(pieceType: PieceType, to: UIPosition): MoveResult
   getGameState(): GameState
   getLegalMoves(from?: UIPosition): UIPosition[]
-  canPromote(piece: IPiece, to: Position): boolean
+  canPromote(from: UIPosition, to: UIPosition): boolean
   resign(player: Player): void
+  getLegalDropPositions(
+    pieceType: PieceType,
+    player: Player,
+  ): UIPosition[]
+  getBoardPieces: () => { piece: IPiece; position: UIPosition }[]
 }

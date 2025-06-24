@@ -14,10 +14,12 @@ interface PieceUIProps {
   size?: 'sm' | 'md' | 'lg';
   onClick?: (piece: IPiece) => void;
   className?: string;
+  'aria-describedby'?: string;
+  tabIndex?: number;
 }
 
 export const PieceUI: React.FC<PieceUIProps> = React.memo(
-  ({ piece, size = 'md', onClick, className = '' }) => {
+  ({ piece, size = 'md', onClick, className = '', 'aria-describedby': ariaDescribedBy, tabIndex }) => {
     const kanji = pieceKanji[piece.type];
     const isGote = piece.player === Player.GOTE;
     const isPromotedPiece = isPromoted(piece.type);
@@ -46,6 +48,10 @@ export const PieceUI: React.FC<PieceUIProps> = React.memo(
         data-piece-type={piece.type}
         data-player={piece.player}
         aria-label={`${piece.player === Player.SENTE ? '先手' : '後手'}の${kanji}`}
+        aria-describedby={ariaDescribedBy}
+        tabIndex={tabIndex}
+        role="button"
+        aria-pressed={false}
       >
         <span
           className={cn('select-none', {
