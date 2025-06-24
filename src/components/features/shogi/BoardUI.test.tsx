@@ -3,8 +3,8 @@ import { describe, it, expect, vi } from 'vitest';
 
 import { PieceType, Player } from '@/domain/models/piece/types';
 
-import { BoardUI } from './BoardUI';
 import { KANJI_NUMBERS } from './BoardCell';
+import { BoardUI } from './BoardUI';
 
 const getCellIndex = (row: number, col: number) => (row - 1) * 9 + (9 - col);
 

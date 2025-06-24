@@ -3,6 +3,8 @@ import { IPiece } from '@/domain/models/piece/interface'
 import { Player, PieceType } from '@/domain/models/piece/types'
 import { UIPosition, GameStatus } from '@/types/common'
 
+export type { GameStatus, UIPosition }
+
 export interface GameMove {
   drop?: PieceType
   from?: UIPosition
