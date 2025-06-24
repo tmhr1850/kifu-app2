@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import { vi } from 'vitest'
 
 import { PieceType, Player } from '@/domain/models/piece/types'
 
@@ -6,10 +7,10 @@ import { CapturedPiecesUI } from './CapturedPiecesUI'
 import type { CapturedPiece } from './types'
 
 describe('CapturedPiecesUI', () => {
-  const mockOnClick = jest.fn()
+  const mockOnClick = vi.fn()
 
   beforeEach(() => {
-    mockOnClick.mockClear()
+    vi.clearAllMocks()
   })
 
   it('空の持ち駒エリアを表示する', () => {
