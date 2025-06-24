@@ -248,7 +248,7 @@ export class GameUseCase implements IGameUseCase {
     return isMovingToPromotionZone || isMovingFromPromotionZone
   }
 
-  resign(player: Player): void {
+  resign(_player: Player): void {
     if (!this.gameState) {
       throw new Error('ゲームが開始されていません')
     }

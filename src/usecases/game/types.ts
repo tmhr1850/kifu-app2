@@ -1,9 +1,17 @@
+import { Player, PieceType } from '@/domain/models/piece/types'
 import { Board } from '@/domain/models/board/board'
 import { IPiece } from '@/domain/models/piece/interface'
-import { Player, PieceType } from '@/domain/models/piece/types'
-import { Position } from '@/domain/models/position'
+import { Position } from '@/domain/models/position/position'
 
 export type GameStatus = 'playing' | 'check' | 'checkmate' | 'stalemate' | 'resigned'
+
+/**
+ * UI層で扱う座標 (1-9)
+ */
+export interface UIPosition {
+  row: number
+  column: number
+}
 
 export interface GameMove {
   drop?: PieceType
@@ -41,14 +49,6 @@ export interface MoveResult {
   success: boolean
   error?: Error
   gameState?: GameState
-}
-
-/**
- * UI層で扱う座標 (1-9)
- */
-export interface UIPosition {
-  row: number
-  column: number
 }
 
 export interface IGameUseCase {

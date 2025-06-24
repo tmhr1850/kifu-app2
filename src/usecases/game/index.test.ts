@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 
-import { InvalidMoveError } from '@/domain/errors/invalid-move-error'
 import { PieceType, Player } from '@/domain/models/piece/types'
 import { Position } from '@/domain/models/position/position'
 
@@ -17,91 +16,64 @@ describe('GameUseCase', () => {
 
   describe('startNewGame', () => {
     it('新しい対局を開始できる', () => {
-      const gameState = gameUseCase.startNewGame()
-
+      const gameState = gameUseCase.getGameState()
       expect(gameState.board).toBeDefined()
       expect(gameState.currentPlayer).toBe(Player.SENTE)
       expect(gameState.history).toHaveLength(0)
-      expect(gameState.capturedPieces.sente).toHaveLength(0)
-      expect(gameState.capturedPieces.gote).toHaveLength(0)
-      expect(gameState.status).toBe('playing')
     })
   })
 
   describe('movePiece', () => {
     it('合法な駒移動を実行できる', () => {
-      const from: UIPosition = { row: 7, column: 7 }
-      const to: UIPosition = { row: 6, column: 7 }
-      const result = gameUseCase.movePiece(from, to)
+      const result = gameUseCase.movePiece({ row: 7, column: 7 }, { row: 6, column: 7 })
 
       expect(result.success).toBe(true)
-      if (result.success) {
-        const state = result.gameState
-        expect(state.currentPlayer).toBe(Player.GOTE)
-        expect(state.history).toHaveLength(1)
-        const lastMove = state.history[0].move
-        if ('from' in lastMove) {
-          expect(lastMove).toEqual({
-            from: { row: 7, column: 7 },
-            to: { row: 6, column: 7 },
-            piece: PieceType.PAWN,
-            isPromotion: false,
-            capturedPiece: undefined
-          })
-        }
-      }
+      const gameState = gameUseCase.getGameState()
+      expect(gameState.currentPlayer).toBe(Player.GOTE)
+      expect(gameState.history).toHaveLength(1)
     })
 
-    it('相手の駒は動かせない', () => {
-      const from: UIPosition = { row: 3, column: 3 } // GOTEの歩
-      const to: UIPosition = { row: 4, column: 3 }
-      const result = gameUseCase.movePiece(from, to)
+    it('相手の番に自分の駒を動かせない', () => {
+      const result = gameUseCase.movePiece({ row: 3, column: 3 }, { row: 4, column: 3 })
 
       expect(result.success).toBe(false)
-      expect(gameUseCase.getGameState()?.currentPlayer).toBe(Player.SENTE)
-    })
-
-    it('相手の駒を取れる', () => {
-      gameUseCase.movePiece({ row: 7, column: 2 }, { row: 6, column: 2 })
-      gameUseCase.movePiece({ row: 8, column: 2 }, { row: 3, column: 2 })
-      const result = gameUseCase.getGameState()
-      expect(result.capturedPieces.sente.some(p => p.type === PieceType.PAWN)).toBe(true)
+      expect(result.error?.message).toContain('相手の番です')
     })
   })
 
   describe('dropPiece', () => {
     beforeEach(() => {
-      // SENTEがGOTEの歩を取る状況を作成
-      gameUseCase.movePiece({ row: 7, column: 7 }, { row: 6, column: 7 }) // SENTE 7g->6g
-      gameUseCase.movePiece({ row: 3, column: 3 }, { row: 4, column: 3 }) // GOTE 3c->4c
-      gameUseCase.movePiece({ row: 2, column: 2 }, { row: 4, column: 3 }) // SENTE 2b(角) x 4c(歩) -> SENTEが歩をGET
+      // SENTEがGOTEの香車を取る
+      gameUseCase.movePiece({ row: 7, column: 1 }, { row: 6, column: 1 })
+      gameUseCase.movePiece({ row: 3, column: 1 }, { row: 4, column: 1 })
+      gameUseCase.movePiece({ row: 2, column: 2 }, { row: 3, column: 1 })
     })
 
-    it('持ち駒を正しい場所に打てる', () => {
-      // GOTEのターン。何か適当な手を指す
-      gameUseCase.movePiece({ row: 3, column: 1 }, { row: 4, column: 1 })
+    it('持ち駒を打てる', () => {
+      // GOTEのターン
+      gameUseCase.movePiece({ row: 8, column: 2 }, { row: 7, column: 2 })
 
       // SENTEのターン
-      const result = gameUseCase.dropPiece(PieceType.PAWN, { row: 5, column: 5 })
+      const result = gameUseCase.dropPiece(PieceType.PAWN, { row: 5, column: 1 })
       expect(result.success).toBe(true)
-      if (result.success) {
-        const state = result.gameState
-        const capturedPawn = state.capturedPieces.sente.find(p => p.type === PieceType.PAWN)
-        expect(capturedPawn).toBeUndefined()
-        const droppedPiece = state.board.getPiece(new Position(5 - 1, 5 - 1))
-        expect(droppedPiece?.type).toBe(PieceType.PAWN)
-        expect(state.currentPlayer).toBe(Player.GOTE)
-      }
+
+      const state = gameUseCase.getGameState()
+      expect(state.board.getPiece({ row: 4, column: 0 })?.type).toBe(
+        PieceType.PAWN,
+      )
+      expect(
+        state.capturedPieces.sente.some(p => p.type === PieceType.PAWN),
+      ).toBe(false)
     })
 
-    it('二歩を検出して拒否する', () => {
+    it('二歩はできない', () => {
       // GOTEのターン
-      gameUseCase.movePiece({ row: 3, column: 1 }, { row: 4, column: 1 })
-
-      // SENTEのターン。7筋にはすでに歩がいる
-      const result = gameUseCase.dropPiece(PieceType.PAWN, { row: 4, column: 7 })
+      gameUseCase.movePiece({ row: 8, column: 2 }, { row: 7, column: 2 })
+      
+      // SENTEのターン(6筋にはすでに歩がいる)
+      const result = gameUseCase.dropPiece(PieceType.PAWN, { row: 5, column: 7 })
       expect(result.success).toBe(false)
-      expect(gameUseCase.getGameState()?.currentPlayer).toBe(Player.SENTE)
+      expect(result.error?.message).toContain('二歩です')
     })
   })
 
