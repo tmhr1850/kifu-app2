@@ -1,3 +1,4 @@
+import { InvalidMoveError } from '../../errors/invalid-move-error';
 import { createPiece } from '../piece/factory';
 import { IBoard, IPiece } from '../piece/interface';
 import { Move, PieceType, Player, Position } from '../piece/types';
@@ -133,10 +134,8 @@ export class Board implements IBoard {
     const originalPiece = newBoard.getPiece(move.from);
 
     if (!originalPiece) {
-      // 動かす駒がない場合は、ロジックエラーの可能性が高い
-      // 本来は呼び出し側(GameRules)が有効な手を渡す責務を持つ
-      // ここでは何もしないで盤面をそのまま返す or エラーをスローする
-      return newBoard;
+      // 動かす駒がないのは、呼び出し側(GameRules)の責務違反
+      throw new InvalidMoveError(move.from);
     }
 
     // 新しい位置情報を持つクローンを作成

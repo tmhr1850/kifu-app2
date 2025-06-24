@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { Board } from './board';
+import { InvalidMoveError } from '../../errors/invalid-move-error';
 import { createPiece } from '../piece/factory';
 import { IPiece } from '../piece/interface';
 import { Pawn } from '../piece/pieces/pawn';
@@ -127,6 +128,39 @@ describe('Board', () => {
       expect(movedPiece).not.toBeNull();
       expect(movedPiece?.type).toBe(PieceType.PAWN);
       expect(newBoard.getPiece({ row: 6, column: 7 })).toBeNull();
+    });
+
+    it('移動元に駒が存在しない場合はエラーをスローすること', () => {
+      // セットアップ
+      const board = Board.createInitialBoard();
+      const invalidMove: Move = {
+        from: { row: 4, column: 4 }, // 中央の空きマス
+        to: { row: 5, column: 4 },
+        isPromotion: false,
+      };
+
+      // 実行と検証
+      expect(() => board.applyMove(invalidMove)).toThrow(InvalidMoveError);
+      expect(() => board.applyMove(invalidMove)).toThrow(
+        '指定された位置(4, 4)に駒が存在しません'
+      );
+    });
+
+    it('成りの手を正しく適用できること', () => {
+      const board = new Board();
+      board.setPiece({ row: 1, column: 0 }, new Pawn(Player.SENTE));
+
+      const move: Move = {
+        from: { row: 1, column: 0 },
+        to: { row: 0, column: 0 },
+        isPromotion: true,
+      };
+
+      const newBoard = board.applyMove(move);
+      const promotedPiece = newBoard.getPiece({ row: 0, column: 0 });
+      expect(promotedPiece).not.toBeNull();
+      expect(promotedPiece?.type).toBe(PieceType.TOKIN);
+      expect(newBoard.getPiece({ row: 1, column: 0 })).toBeNull();
     });
   });
 }); 
