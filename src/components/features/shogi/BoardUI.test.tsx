@@ -32,9 +32,14 @@ describe('BoardUI', () => {
     render(<BoardUI onCellClick={handleCellClick} />);
     
     const cells = screen.getAllByRole('button');
-    fireEvent.click(cells[0]); // 左上のマスをクリック
     
-    expect(handleCellClick).toHaveBeenCalledWith({ row: 0, col: 0 });
+    // 左上のマス（9一）をクリック
+    fireEvent.click(cells[0]);
+    expect(handleCellClick).toHaveBeenCalledWith({ row: 0, col: 8 });
+    
+    // 右下のマス（1九）をクリック
+    fireEvent.click(cells[80]);
+    expect(handleCellClick).toHaveBeenCalledWith({ row: 8, col: 0 });
   });
 
   it('選択されたマスがハイライトされる', () => {
