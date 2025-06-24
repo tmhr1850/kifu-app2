@@ -80,7 +80,7 @@ export abstract class Piece implements IPiece {
    * 駒がすでに成り駒かチェック
    * @returns 成り駒の場合true
    */
-  private isPromoted(): boolean {
+  public isPromoted(): boolean {
     return [
       PieceType.DRAGON,
       PieceType.HORSE,

@@ -135,7 +135,7 @@ export class Board implements IBoard {
 
     if (!originalPiece) {
       // 動かす駒がないのは、呼び出し側(GameRules)の責務違反
-      throw new InvalidMoveError(move.from);
+      throw new InvalidMoveError(`指定された位置(${move.from.row}, ${move.from.column})に駒が存在しません`);
     }
 
     // 新しい位置情報を持つクローンを作成
