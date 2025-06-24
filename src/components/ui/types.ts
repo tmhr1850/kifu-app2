@@ -1,6 +1,6 @@
 import { IPiece } from '@/domain/models/piece/interface'
 import { PieceType, Player } from '@/domain/models/piece/types'
-import { UIPosition } from '@/usecases/game/types'
+import { UIPosition } from '@/types/common'
 
 /**
  * 将棋盤コンポーネントのProps

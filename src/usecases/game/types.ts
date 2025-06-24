@@ -1,16 +1,7 @@
 import { Board } from '@/domain/models/board/board'
 import { IPiece } from '@/domain/models/piece/interface'
 import { Player, PieceType } from '@/domain/models/piece/types'
-
-export type GameStatus = 'playing' | 'check' | 'checkmate' | 'stalemate' | 'resigned'
-
-/**
- * UI層で扱う座標 (1-9)
- */
-export interface UIPosition {
-  row: number
-  column: number
-}
+import { UIPosition, GameStatus } from '@/types/common'
 
 export interface GameMove {
   drop?: PieceType

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { BoardUI } from '@/components/features/shogi';
-import { UIPosition } from '@/usecases/game/types';
+import { UIPosition } from '@/types/common';
 
 export default function BoardDemoPage() {
   const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);

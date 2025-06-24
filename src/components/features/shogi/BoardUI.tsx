@@ -1,11 +1,12 @@
 'use client';
 
 import { clsx } from 'clsx';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, memo } from 'react';
 
-import { PieceUI } from '@/components/ui/PieceUI';
 import { IPiece } from '@/domain/models/piece/interface';
-import { UIPosition } from '@/usecases/game/types';
+import { UIPosition } from '@/types/common';
+
+import { BoardCell, KANJI_NUMBERS } from './BoardCell';
 
 interface BoardUIProps {
   onCellClick?: (position: UIPosition) => void;
@@ -15,15 +16,16 @@ interface BoardUIProps {
   pieces?: { piece: IPiece; position: UIPosition }[];
 }
 
-export const KANJI_NUMBERS = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
 
-export const BoardUI: React.FC<BoardUIProps> = ({
+export const BoardUI: React.FC<BoardUIProps> = memo(({
   onCellClick,
   onPieceClick,
   selectedCell,
   highlightedCells = [],
   pieces = [],
 }) => {
+  // キーボードナビゲーション用のフォーカス位置
+  const [focusedCell, setFocusedCell] = useState<UIPosition>({ row: 5, column: 5 });
   // 駒の位置をマップに変換して高速検索可能にする
   const piecesMap = useMemo(() => {
     const map = new Map<string, IPiece>();
@@ -49,18 +51,53 @@ export const BoardUI: React.FC<BoardUIProps> = ({
     [highlightedCells]
   );
 
-  const handleCellClick = useCallback(
-    (row: number, col:number) => {
-      // row, col は 1-based
-      onCellClick?.({ row, column: col });
-    },
-    [onCellClick]
-  );
+
+  // キーボードナビゲーションのハンドラー
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    const { key } = event;
+    const { row, column } = focusedCell;
+
+    switch (key) {
+      case 'ArrowUp':
+        event.preventDefault();
+        if (row > 1) setFocusedCell({ row: row - 1, column });
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        if (row < 9) setFocusedCell({ row: row + 1, column });
+        break;
+      case 'ArrowLeft':
+        event.preventDefault();
+        if (column < 9) setFocusedCell({ row, column: column + 1 });
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        if (column > 1) setFocusedCell({ row, column: column - 1 });
+        break;
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        // フォーカス位置の駒または空のセルをクリック
+        const piece = piecesMap.get(`${row}-${column}`);
+        if (piece) {
+          onPieceClick?.(piece);
+        } else {
+          onCellClick?.({ row, column });
+        }
+        break;
+    }
+  }, [focusedCell, piecesMap, onCellClick, onPieceClick]);
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
       <div className="aspect-square bg-amber-100 rounded-lg shadow-lg p-4">
-        <div className="grid grid-cols-[auto_repeat(9,1fr)] grid-rows-[auto_repeat(9,1fr)] gap-0 h-full">
+        <div 
+          className="grid grid-cols-[auto_repeat(9,1fr)] grid-rows-[auto_repeat(9,1fr)] gap-0 h-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          role="grid"
+          aria-label="将棋盤 - 矢印キーで移動、EnterまたはSpaceで選択"
+        >
           {/* 左上の空白セル */}
           <div className=""></div>
           
@@ -84,38 +121,20 @@ export const BoardUI: React.FC<BoardUIProps> = ({
                 // UI表示用の座標(1-9)に変換
                 const uiRow = rowIndex + 1; 
                 const uiCol = 9 - colIndex;
-
                 const piece = piecesMap.get(`${uiRow}-${uiCol}`);
                 
                 return (
-                  <div
+                  <BoardCell
                     key={`cell-${rowIndex}-${colIndex}`}
-                    className={clsx(
-                      'border border-gray-800 transition-colors duration-200',
-                      'relative flex items-center justify-center',
-                      {
-                        'bg-blue-500': isCellSelected(uiRow, uiCol),
-                        'bg-green-500': isCellHighlighted(uiRow, uiCol) && !isCellSelected(uiRow, uiCol),
-                        'bg-amber-50': !isCellSelected(uiRow, uiCol) && !isCellHighlighted(uiRow, uiCol)
-                      }
-                    )}
-                  >
-                    {piece ? (
-                      <PieceUI
-                        piece={piece}
-                        size="sm"
-                        onClick={onPieceClick}
-                        className="absolute inset-1"
-                      />
-                    ) : (
-                      <button
-                        data-testid={`cell-${rowIndex}-${colIndex}`}
-                        onClick={() => handleCellClick(uiRow, uiCol)}
-                        className="w-full h-full hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        aria-label={`${KANJI_NUMBERS[rowIndex]}${9 - colIndex}`}
-                      />
-                    )}
-                  </div>
+                    rowIndex={rowIndex}
+                    colIndex={colIndex}
+                    piece={piece || null}
+                    isSelected={isCellSelected(uiRow, uiCol)}
+                    isHighlighted={isCellHighlighted(uiRow, uiCol)}
+                    isFocused={focusedCell.row === uiRow && focusedCell.column === uiCol}
+                    onCellClick={onCellClick || (() => {})}
+                    onPieceClick={onPieceClick}
+                  />
                 );
               })}
             </React.Fragment>
@@ -124,4 +143,6 @@ export const BoardUI: React.FC<BoardUIProps> = ({
       </div>
     </div>
   );
-};
+});
+
+BoardUI.displayName = 'BoardUI';
