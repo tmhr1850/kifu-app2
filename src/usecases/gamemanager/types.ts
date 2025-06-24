@@ -1,6 +1,6 @@
-import { GameState, GameMove } from '@/usecases/game/types'
-import { UIPosition, GameStatus } from '@/types/common'
 import { Player, PieceType } from '@/domain/models/piece/types'
+import { UIPosition } from '@/types/common'
+import { GameState } from '@/usecases/game/types'
 
 export interface GameManagerState {
   gameState: GameState

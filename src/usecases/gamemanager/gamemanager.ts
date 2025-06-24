@@ -1,15 +1,15 @@
-import { GameUseCase } from '@/usecases/game/usecase'
-import { SimpleAI } from '@/usecases/ai/simple-ai'
+import { Player, PieceType } from '@/domain/models/piece/types'
 import { IAIEngine } from '@/domain/services/ai-engine'
-import { Board } from '@/domain/models/board/board'
+import { UIPosition } from '@/types/common'
+import { SimpleAI } from '@/usecases/ai/simple-ai'
+import { GameUseCase } from '@/usecases/game/usecase'
+
 import { 
   GameManagerState, 
   GameManagerConfig, 
   SavedGameState, 
   IGameManager 
 } from './types'
-import { UIPosition } from '@/types/common'
-import { Player, PieceType } from '@/domain/models/piece/types'
 
 const STORAGE_KEY = 'kifu-app-game-state'
 
@@ -189,7 +189,6 @@ export class GameManager implements IGameManager {
       const saved: SavedGameState = JSON.parse(savedData)
       
       // 保存されたゲーム状態を復元
-      const board = new Board()
       // TODO: Boardの状態を復元する機能を実装
       
       this.state = {
