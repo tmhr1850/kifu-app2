@@ -5,7 +5,7 @@ import { PieceType, Player } from '@/domain/models/piece/types';
 
 import { BoardUI, KANJI_NUMBERS } from './BoardUI';
 
-const getCellIndex = (row: number, col: number) => row * 9 + (8 - col);
+const getCellIndex = (row: number, col: number) => (row - 1) * 9 + (9 - col);
 
 describe('BoardUI', () => {
   it('将棋盤を9×9のグリッドで描画する', () => {
@@ -50,9 +50,10 @@ describe('BoardUI', () => {
     
     const cells = screen.getAllByRole('button');
     const selectedCellIndex = getCellIndex(4, 4); // 5行5列目
-    const selectedCell = cells[selectedCellIndex];
+    const selectedCellButton = cells[selectedCellIndex];
+    const selectedCellDiv = selectedCellButton.parentElement;
     
-    expect(selectedCell).toHaveClass('bg-blue-500');
+    expect(selectedCellDiv).toHaveClass('bg-blue-500');
   });
 
   it('移動可能なマスがハイライトされる', () => {
@@ -71,11 +72,13 @@ describe('BoardUI', () => {
       highlightedCells[1].row,
       highlightedCells[1].column
     );
-    const firstHighlighted = cells[firstHighlightedIndex];
-    const secondHighlighted = cells[secondHighlightedIndex];
+    const firstHighlightedButton = cells[firstHighlightedIndex];
+    const secondHighlightedButton = cells[secondHighlightedIndex];
+    const firstHighlightedDiv = firstHighlightedButton.parentElement;
+    const secondHighlightedDiv = secondHighlightedButton.parentElement;
     
-    expect(firstHighlighted).toHaveClass('bg-green-500');
-    expect(secondHighlighted).toHaveClass('bg-green-500');
+    expect(firstHighlightedDiv).toHaveClass('bg-green-500');
+    expect(secondHighlightedDiv).toHaveClass('bg-green-500');
   });
 
   it('レスポンシブで正方形を保つ', () => {
@@ -103,14 +106,14 @@ describe('BoardUI', () => {
         piece: {
           type: PieceType.KING,
           player: Player.GOTE,
-          position: { row: 0, column: 4 },
+          position: { row: 1, column: 5 },
           getValidMoves: vi.fn(),
           promote: vi.fn(),
           clone: vi.fn(),
           equals: vi.fn(),
           isPromoted: vi.fn(() => false),
         },
-        position: { row: 0, column: 4 },
+        position: { row: 1, column: 5 },
       },
     ];
 
@@ -119,8 +122,8 @@ describe('BoardUI', () => {
     // 先手の歩があることを確認
     expect(screen.getByLabelText('先手の歩')).toBeInTheDocument();
     
-    // 後手の玉があることを確認
-    expect(screen.getByLabelText('後手の玉')).toBeInTheDocument();
+    // 後手の王があることを確認
+    expect(screen.getByLabelText('後手の王')).toBeInTheDocument();
   });
 
   it('駒をクリックするとonPieceClickが呼ばれる', () => {

@@ -6,24 +6,29 @@ import { GameScreen } from './GameScreen';
 // モックの設定
 vi.mock('@/usecases/game/usecase', () => ({
   GameUseCase: vi.fn().mockImplementation(() => ({
-    initializeGame: vi.fn(),
-    getCurrentState: vi.fn(() => ({
-      board: {
-        getPiece: vi.fn(),
-        pieces: [],
-      },
-      capturedPieces: {
-        SENTE: [],
-        GOTE: [],
-      },
+    startNewGame: vi.fn(() => ({
+      board: {},
       currentPlayer: 'SENTE',
+      history: [],
+      capturedPieces: { sente: [], gote: [] },
+      status: 'playing',
       isCheck: false,
-      isCheckmate: false,
     })),
-    getValidMoves: vi.fn(() => []),
-    move: vi.fn(),
-    dropPiece: vi.fn(),
+    getGameState: vi.fn(() => ({
+      board: {},
+      currentPlayer: 'SENTE',
+      history: [],
+      capturedPieces: { sente: [], gote: [] },
+      status: 'playing',
+      isCheck: false,
+    })),
+    movePiece: vi.fn(() => ({ success: true })),
+    dropPiece: vi.fn(() => ({ success: true })),
+    getLegalMoves: vi.fn(() => []),
+    canPromote: vi.fn(() => false),
     resign: vi.fn(),
+    getLegalDropPositions: vi.fn(() => []),
+    getBoardPieces: vi.fn(() => []),
   })),
 }));
 
@@ -60,39 +65,38 @@ describe('GameScreen', () => {
 
   it('駒をクリックすると移動可能なマスがハイライトされる', async () => {
     const mockGameUseCase = {
-      initializeGame: vi.fn(),
-      getCurrentState: vi.fn(() => ({
-        board: {
-          getPiece: vi.fn((pos) => {
-            if (pos.row === 6 && pos.col === 4) {
-              return {
-                type: 'PAWN',
-                player: 'SENTE',
-                position: { row: 6, col: 4 },
-              };
-            }
-            return null;
-          }),
-          pieces: [
-            {
-              type: 'PAWN',
-              player: 'SENTE',
-              position: { row: 6, col: 4 },
-            },
-          ],
-        },
-        capturedPieces: {
-          SENTE: [],
-          GOTE: [],
-        },
+      startNewGame: vi.fn(() => ({
+        board: {},
         currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: { sente: [], gote: [] },
+        status: 'playing',
         isCheck: false,
-        isCheckmate: false,
       })),
-      getValidMoves: vi.fn(() => [{ row: 5, col: 4 }]),
-      move: vi.fn(),
-      dropPiece: vi.fn(),
+      getGameState: vi.fn(() => ({
+        board: {},
+        currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: { sente: [], gote: [] },
+        status: 'playing',
+        isCheck: false,
+      })),
+      getBoardPieces: vi.fn(() => [
+        {
+          piece: {
+            type: 'PAWN',
+            player: 'SENTE',
+            position: { row: 6, column: 4 },
+          },
+          position: { row: 6, column: 4 },
+        },
+      ]),
+      getLegalMoves: vi.fn(() => [{ row: 5, column: 4 }]),
+      movePiece: vi.fn(() => ({ success: true })),
+      dropPiece: vi.fn(() => ({ success: true })),
+      canPromote: vi.fn(() => false),
       resign: vi.fn(),
+      getLegalDropPositions: vi.fn(() => []),
     };
 
     vi.mocked(await import('@/usecases/game/usecase')).GameUseCase.mockImplementation(
@@ -105,32 +109,37 @@ describe('GameScreen', () => {
     const pawn = screen.getByLabelText('先手の歩');
     fireEvent.click(pawn);
 
-    // getValidMovesが呼ばれる
+    // getLegalMovesが呼ばれる
     await waitFor(() => {
-      expect(mockGameUseCase.getValidMoves).toHaveBeenCalledWith({ row: 6, col: 4 });
+      expect(mockGameUseCase.getLegalMoves).toHaveBeenCalledWith({ row: 6, column: 4 });
     });
   });
 
   it('王手の時に警告を表示する', async () => {
     const mockGameUseCase = {
-      initializeGame: vi.fn(),
-      getCurrentState: vi.fn(() => ({
-        board: {
-          getPiece: vi.fn(),
-          pieces: [],
-        },
-        capturedPieces: {
-          SENTE: [],
-          GOTE: [],
-        },
+      startNewGame: vi.fn(() => ({
+        board: {},
         currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: { sente: [], gote: [] },
+        status: 'playing',
         isCheck: true,
-        isCheckmate: false,
       })),
-      getValidMoves: vi.fn(() => []),
-      move: vi.fn(),
-      dropPiece: vi.fn(),
+      getGameState: vi.fn(() => ({
+        board: {},
+        currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: { sente: [], gote: [] },
+        status: 'playing',
+        isCheck: true,
+      })),
+      getBoardPieces: vi.fn(() => []),
+      getLegalMoves: vi.fn(() => []),
+      movePiece: vi.fn(() => ({ success: true })),
+      dropPiece: vi.fn(() => ({ success: true })),
+      canPromote: vi.fn(() => false),
       resign: vi.fn(),
+      getLegalDropPositions: vi.fn(() => []),
     };
 
     vi.mocked(await import('@/usecases/game/usecase')).GameUseCase.mockImplementation(
@@ -145,24 +154,31 @@ describe('GameScreen', () => {
 
   it('詰みの時にゲーム終了メッセージを表示する', async () => {
     const mockGameUseCase = {
-      initializeGame: vi.fn(),
-      getCurrentState: vi.fn(() => ({
-        board: {
-          getPiece: vi.fn(),
-          pieces: [],
-        },
-        capturedPieces: {
-          SENTE: [],
-          GOTE: [],
-        },
+      startNewGame: vi.fn(() => ({
+        board: {},
         currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: { sente: [], gote: [] },
+        status: 'checkmate',
         isCheck: false,
-        isCheckmate: true,
+        winner: 'GOTE',
       })),
-      getValidMoves: vi.fn(() => []),
-      move: vi.fn(),
-      dropPiece: vi.fn(),
+      getGameState: vi.fn(() => ({
+        board: {},
+        currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: { sente: [], gote: [] },
+        status: 'checkmate',
+        isCheck: false,
+        winner: 'GOTE',
+      })),
+      getBoardPieces: vi.fn(() => []),
+      getLegalMoves: vi.fn(() => []),
+      movePiece: vi.fn(() => ({ success: true })),
+      dropPiece: vi.fn(() => ({ success: true })),
+      canPromote: vi.fn(() => false),
       resign: vi.fn(),
+      getLegalDropPositions: vi.fn(() => []),
     };
 
     vi.mocked(await import('@/usecases/game/usecase')).GameUseCase.mockImplementation(
@@ -177,26 +193,31 @@ describe('GameScreen', () => {
   });
 
   it('新規対局ボタンで新しいゲームを開始する', async () => {
-    const mockInitializeGame = vi.fn();
+    const mockStartNewGame = vi.fn(() => ({
+      board: {},
+      currentPlayer: 'SENTE',
+      history: [],
+      capturedPieces: { sente: [], gote: [] },
+      status: 'playing',
+      isCheck: false,
+    }));
     const mockGameUseCase = {
-      initializeGame: mockInitializeGame,
-      getCurrentState: vi.fn(() => ({
-        board: {
-          getPiece: vi.fn(),
-          pieces: [],
-        },
-        capturedPieces: {
-          SENTE: [],
-          GOTE: [],
-        },
+      startNewGame: mockStartNewGame,
+      getGameState: vi.fn(() => ({
+        board: {},
         currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: { sente: [], gote: [] },
+        status: 'playing',
         isCheck: false,
-        isCheckmate: false,
       })),
-      getValidMoves: vi.fn(() => []),
-      move: vi.fn(),
-      dropPiece: vi.fn(),
+      getBoardPieces: vi.fn(() => []),
+      getLegalMoves: vi.fn(() => []),
+      movePiece: vi.fn(() => ({ success: true })),
+      dropPiece: vi.fn(() => ({ success: true })),
+      canPromote: vi.fn(() => false),
       resign: vi.fn(),
+      getLegalDropPositions: vi.fn(() => []),
     };
 
     vi.mocked(await import('@/usecases/game/usecase')).GameUseCase.mockImplementation(
@@ -209,7 +230,7 @@ describe('GameScreen', () => {
     fireEvent.click(newGameButton);
 
     await waitFor(() => {
-      expect(mockInitializeGame).toHaveBeenCalled();
+      expect(mockStartNewGame).toHaveBeenCalled();
     });
   });
 

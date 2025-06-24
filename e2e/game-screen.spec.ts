@@ -25,25 +25,29 @@ test.describe('GameScreen E2E Tests', () => {
   });
 
   test('駒を動かすことができる', async ({ page }) => {
-    // 初期配置の歩を選択
-    const pawn = page.getByLabel('先手の歩').first();
-    await pawn.click();
+    // 7七の歩を選択 (初期位置)
+    await page.getByRole('button', { name: '先手の歩' }).nth(6).click();
 
-    // 移動先をクリック（仮に7六の歩を7五に動かす）
-    // 実際の座標は実装に依存するため、適切に調整が必要
-    const targetCell = page.locator('button[aria-label="五七"]');
-    await targetCell.click();
+    // 7六に移動
+    await page.getByTestId('cell-5-2').click();
 
-    // 手番が変わることを確認
+    // 手番が後手に変わることを確認
     await expect(page.getByText('後手番')).toBeVisible();
+
+    // 後手の3三の歩を選択
+    await page.getByRole('button', { name: '後手の歩' }).nth(2).click();
+
+    // 3四に移動
+    await page.getByTestId('cell-3-6').click();
+
+    // 手番が先手に戻ることを確認
+    await expect(page.getByText('先手番')).toBeVisible();
   });
 
   test('新規対局ボタンで新しいゲームが開始される', async ({ page }) => {
-    // 適当に駒を動かす
-    const pawn = page.getByLabel('先手の歩').first();
-    await pawn.click();
-    const targetCell = page.locator('button').nth(50); // 適当な位置
-    await targetCell.click();
+    // 7七の歩を7六に動かす
+    await page.getByRole('button', { name: '先手の歩' }).nth(6).click();
+    await page.getByTestId('cell-5-2').click();
 
     // 新規対局ボタンをクリック
     await page.getByRole('button', { name: '新規対局' }).click();
