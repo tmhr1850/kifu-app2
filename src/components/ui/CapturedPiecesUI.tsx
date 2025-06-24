@@ -1,5 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
+
 import { PieceType, Player } from '@/domain/models/piece/types'
 
 import type { CapturedPiecesUIProps } from './types'
@@ -35,6 +37,12 @@ const pieceOrder: PieceType[] = [
   PieceType.GOLD,
   PieceType.BISHOP,
   PieceType.ROOK,
+  PieceType.DRAGON,
+  PieceType.HORSE,
+  PieceType.PROMOTED_SILVER,
+  PieceType.PROMOTED_KNIGHT,
+  PieceType.PROMOTED_LANCE,
+  PieceType.TOKIN,
 ]
 
 /**
@@ -47,12 +55,15 @@ export function CapturedPiecesUI({
   selectedPiece,
   onPieceClick,
 }: CapturedPiecesUIProps) {
-  // 駒を正しい順序にソート
-  const sortedPieces = [...capturedPieces].sort((a, b) => {
-    const aIndex = pieceOrder.indexOf(a.type)
-    const bIndex = pieceOrder.indexOf(b.type)
-    return aIndex - bIndex
-  })
+  const sortedPieces = useMemo(
+    () =>
+      [...capturedPieces].sort((a, b) => {
+        const aIndex = pieceOrder.indexOf(a.type)
+        const bIndex = pieceOrder.indexOf(b.type)
+        return aIndex - bIndex
+      }),
+    [capturedPieces],
+  )
 
   // プレイヤーごとの背景色
   const bgColor = player === Player.SENTE ? 'bg-blue-50' : 'bg-red-50'
@@ -67,9 +78,14 @@ export function CapturedPiecesUI({
         {sortedPieces.map((piece) => (
           <button
             key={piece.type}
+            type="button"
             data-testid="captured-piece"
             onClick={() => onPieceClick(piece.type)}
             disabled={!isMyTurn}
+            aria-label={`${pieceTypeToKanji[piece.type]}${
+              piece.count > 1 ? `（${piece.count}枚）` : ''
+            }`}
+            aria-pressed={selectedPiece === piece.type}
             className={`
               relative
               w-10 h-12 sm:w-12 sm:h-14 md:w-14 md:h-16
@@ -92,7 +108,10 @@ export function CapturedPiecesUI({
           </button>
         ))}
         {sortedPieces.length === 0 && (
-          <div className="text-gray-400 text-sm sm:text-base p-2">
+          <div
+            className="text-gray-400 text-sm sm:text-base p-2"
+            role="status"
+          >
             持ち駒なし
           </div>
         )}
