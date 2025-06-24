@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { BoardUI, CellPosition } from '@/components/features/shogi';
 
 export default function BoardDemoPage() {
