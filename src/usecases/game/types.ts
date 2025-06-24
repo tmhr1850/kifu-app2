@@ -1,6 +1,6 @@
-import { Player, PieceType } from '@/domain/models/piece/types'
 import { Board } from '@/domain/models/board/board'
 import { IPiece } from '@/domain/models/piece/interface'
+import { Player, PieceType } from '@/domain/models/piece/types'
 import { Position } from '@/domain/models/position/position'
 
 export type GameStatus = 'playing' | 'check' | 'checkmate' | 'stalemate' | 'resigned'

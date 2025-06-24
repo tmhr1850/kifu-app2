@@ -4,7 +4,6 @@ import { PieceType, Player } from '@/domain/models/piece/types'
 import { Position } from '@/domain/models/position/position'
 
 import { GameUseCase } from './usecase'
-import { UIPosition } from './types'
 
 describe('GameUseCase', () => {
   let gameUseCase: GameUseCase
