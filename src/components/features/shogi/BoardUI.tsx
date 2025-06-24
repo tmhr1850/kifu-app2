@@ -1,29 +1,37 @@
 'use client';
 
 import { clsx } from 'clsx';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
 import { CellPosition } from '@/domain/models/position/types';
-
-interface Piece {
-  // TODO: Implement piece properties
-  name: string;
-}
+import { IPiece } from '@/domain/models/piece/interface';
+import { PieceUI } from '@/components/ui/PieceUI';
 
 interface BoardUIProps {
   onCellClick?: (position: CellPosition) => void;
+  onPieceClick?: (piece: IPiece) => void;
   selectedCell?: CellPosition | null;
   highlightedCells?: CellPosition[];
-  pieces?: { piece: Piece; position: CellPosition }[];
+  pieces?: { piece: IPiece; position: CellPosition }[];
 }
 
 export const KANJI_NUMBERS = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
 
 export const BoardUI: React.FC<BoardUIProps> = ({
   onCellClick,
+  onPieceClick,
   selectedCell,
   highlightedCells = [],
+  pieces = [],
 }) => {
+  // 駒の位置をマップに変換して高速検索可能にする
+  const piecesMap = useMemo(() => {
+    const map = new Map<string, IPiece>();
+    pieces.forEach(({ piece, position }) => {
+      map.set(`${position.row}-${position.col}`, piece);
+    });
+    return map;
+  }, [pieces]);
   const isCellSelected = useCallback(
     (row: number, col: number): boolean => {
       return selectedCell?.row === row && selectedCell?.col === col;
@@ -73,21 +81,36 @@ export const BoardUI: React.FC<BoardUIProps> = ({
                 // 例: col=0 (左端の列) -> actualCol=8 (9筋)
                 // 例: col=8 (右端の列) -> actualCol=0 (1筋)
                 const actualCol = 8 - col;
+                const piece = piecesMap.get(`${row}-${actualCol}`);
+                
                 return (
-                  <button
+                  <div
                     key={`cell-${row}-${col}`}
-                    onClick={() => handleCellClick(row, actualCol)}
                     className={clsx(
                       'border border-gray-800 transition-colors duration-200',
-                      'hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-blue-400',
+                      'relative flex items-center justify-center',
                       {
-                        'bg-blue-500 hover:bg-blue-600': isCellSelected(row, actualCol),
-                        'bg-green-500 hover:bg-green-600': isCellHighlighted(row, actualCol) && !isCellSelected(row, actualCol),
+                        'bg-blue-500': isCellSelected(row, actualCol),
+                        'bg-green-500': isCellHighlighted(row, actualCol) && !isCellSelected(row, actualCol),
                         'bg-amber-50': !isCellSelected(row, actualCol) && !isCellHighlighted(row, actualCol)
                       }
                     )}
-                    aria-label={`${KANJI_NUMBERS[row]}${9 - col}`}
-                  />
+                  >
+                    {piece ? (
+                      <PieceUI
+                        piece={piece}
+                        size="sm"
+                        onClick={onPieceClick}
+                        className="absolute inset-1"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => handleCellClick(row, actualCol)}
+                        className="w-full h-full hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        aria-label={`${KANJI_NUMBERS[row]}${9 - col}`}
+                      />
+                    )}
+                  </div>
                 );
               })}
             </React.Fragment>

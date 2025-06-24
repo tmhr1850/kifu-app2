@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
 import { CellPosition } from '@/domain/models/position/types';
+import { IPiece } from '@/domain/models/piece/interface';
 
 import { BoardUI, KANJI_NUMBERS } from './BoardUI';
 
@@ -82,5 +83,66 @@ describe('BoardUI', () => {
     const { container } = render(<BoardUI />);
     const board = container.querySelector('.aspect-square');
     expect(board).toBeInTheDocument();
+  });
+
+  it('駒を正しい位置に表示する', () => {
+    const pieces = [
+      {
+        piece: {
+          type: 'PAWN' as const,
+          player: 'SENTE' as const,
+          position: { row: 6, col: 4 },
+          getValidMoves: vi.fn(),
+          promote: vi.fn(),
+          clone: vi.fn(),
+          equals: vi.fn(),
+          isPromoted: vi.fn(() => false),
+        },
+        position: { row: 6, col: 4 },
+      },
+      {
+        piece: {
+          type: 'KING' as const,
+          player: 'GOTE' as const,
+          position: { row: 0, col: 4 },
+          getValidMoves: vi.fn(),
+          promote: vi.fn(),
+          clone: vi.fn(),
+          equals: vi.fn(),
+          isPromoted: vi.fn(() => false),
+        },
+        position: { row: 0, col: 4 },
+      },
+    ];
+
+    render(<BoardUI pieces={pieces} />);
+
+    // 先手の歩があることを確認
+    expect(screen.getByLabelText('先手の歩')).toBeInTheDocument();
+    
+    // 後手の玉があることを確認
+    expect(screen.getByLabelText('後手の玉')).toBeInTheDocument();
+  });
+
+  it('駒をクリックするとonPieceClickが呼ばれる', () => {
+    const handlePieceClick = vi.fn();
+    const piece = {
+      type: 'PAWN' as const,
+      player: 'SENTE' as const,
+      position: { row: 6, col: 4 },
+      getValidMoves: vi.fn(),
+      promote: vi.fn(),
+      clone: vi.fn(),
+      equals: vi.fn(),
+      isPromoted: vi.fn(() => false),
+    };
+    const pieces = [{ piece, position: { row: 6, col: 4 } }];
+
+    render(<BoardUI pieces={pieces} onPieceClick={handlePieceClick} />);
+
+    const pawnElement = screen.getByLabelText('先手の歩');
+    fireEvent.click(pawnElement);
+
+    expect(handlePieceClick).toHaveBeenCalledWith(piece);
   });
 });
