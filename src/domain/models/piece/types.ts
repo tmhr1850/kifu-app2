@@ -46,3 +46,24 @@ export interface Move {
   to: Position;
   isPromotion?: boolean; // 成りの可否
 }
+
+/**
+ * 持ち駒の最大枚数を定義する定数
+ */
+export const MAX_PIECES_IN_HAND: Record<PieceType, number> = {
+  [PieceType.ROOK]: 2,
+  [PieceType.BISHOP]: 2,
+  [PieceType.GOLD]: 4,
+  [PieceType.SILVER]: 4,
+  [PieceType.KNIGHT]: 4,
+  [PieceType.LANCE]: 4,
+  [PieceType.PAWN]: 18,
+  // 玉、成り駒は持ち駒にならない
+  [PieceType.KING]: 0,
+  [PieceType.DRAGON]: 0,
+  [PieceType.HORSE]: 0,
+  [PieceType.PROMOTED_SILVER]: 0,
+  [PieceType.PROMOTED_KNIGHT]: 0,
+  [PieceType.PROMOTED_LANCE]: 0,
+  [PieceType.TOKIN]: 0,
+};
