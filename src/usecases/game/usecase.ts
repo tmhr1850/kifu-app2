@@ -104,6 +104,14 @@ export class GameUseCase implements IGameUseCase {
       }
     }
 
+    // 成り処理のチェック
+    if (isPromotion && !this.canPromote(piece, to)) {
+      return {
+        success: false,
+        error: new InvalidMoveError('この駒は成ることができません')
+      }
+    }
+
     const capturedPiece = this.gameState.board.getPiece(to)
     if (capturedPiece) {
       const capturedList = this.gameState.currentPlayer === Player.SENTE
@@ -182,8 +190,9 @@ export class GameUseCase implements IGameUseCase {
       }
     }
 
-    const pieceToDrop = capturedList.splice(pieceIndex, 1)[0]
+    const pieceToDrop = capturedList[pieceIndex]
     const newPiece = pieceToDrop.clone(to) // 新しい位置で駒をクローン
+    capturedList.splice(pieceIndex, 1) // 配列から安全に削除
     this.gameState.board.setPiece(to, newPiece)
 
     const gameMove: GameMove = {
@@ -225,11 +234,12 @@ export class GameUseCase implements IGameUseCase {
   }
 
   canPromote(piece: IPiece, to: Position): boolean {
+    // 金、王、すでに成ってる駒は成れない
     const unpromotablePieces: PieceType[] = [
       PieceType.GOLD,
       PieceType.KING,
     ]
-    if (unpromotablePieces.includes(piece.type) || piece.type.startsWith('PROMOTED_') || piece.type === 'TOKIN' || piece.type === 'DRAGON' || piece.type === 'HORSE') {
+    if (unpromotablePieces.includes(piece.type) || piece.isPromoted()) {
       return false
     }
 
@@ -257,26 +267,24 @@ export class GameUseCase implements IGameUseCase {
     // TODO: 勝者を記録するなどの処理
   }
 
-  private isValidPosition(pos: Position): boolean {
-    return pos.column >= 1 && pos.column <= 9 && pos.row >= 1 && pos.row <= 9
-  }
 
   private updateGameStatus(): void {
     if (!this.gameState) {
       return
     }
 
-    // 王手チェック
+    // 王手チェック：現在のプレイヤー（次に指す番の人）が王手されているかチェック
+    const nextPlayer = this.gameState.currentPlayer
     this.gameState.isCheck = this.gameRules.isInCheck(
       this.gameState.board,
-      this.gameState.currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE
+      nextPlayer
     )
 
     // 詰みチェック
     if (this.gameState.isCheck) {
       const isCheckmate = this.gameRules.isCheckmate(
         this.gameState.board,
-        this.gameState.currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE
+        nextPlayer
       )
       
       if (isCheckmate) {
@@ -289,24 +297,6 @@ export class GameUseCase implements IGameUseCase {
     }
   }
 
-  private getPromotedType(type: PieceType): PieceType | null {
-    switch (type) {
-      case PieceType.PAWN:
-        return PieceType.TOKIN
-      case PieceType.LANCE:
-        return PieceType.PROMOTED_LANCE
-      case PieceType.KNIGHT:
-        return PieceType.PROMOTED_KNIGHT
-      case PieceType.SILVER:
-        return PieceType.PROMOTED_SILVER
-      case PieceType.BISHOP:
-        return PieceType.HORSE
-      case PieceType.ROOK:
-        return PieceType.DRAGON
-      default:
-        return null
-    }
-  }
 
   private getUnpromotedType(type: PieceType): PieceType {
     switch (type) {
