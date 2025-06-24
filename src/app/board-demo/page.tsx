@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 
-import { BoardUI, CellPosition } from '@/components/features/shogi';
+import { BoardUI } from '@/components/features/shogi';
+import { CellPosition } from '@/domain/models/position/types';
 
 export default function BoardDemoPage() {
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);

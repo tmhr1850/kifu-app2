@@ -1,7 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
-import { BoardUI } from './BoardUI';
+import { CellPosition } from '@/domain/models/position/types';
+
+import { BoardUI, KANJI_NUMBERS } from './BoardUI';
+
+const getCellIndex = (row: number, col: number) => row * 9 + (8 - col);
 
 describe('BoardUI', () => {
   it('将棋盤を9×9のグリッドで描画する', () => {
@@ -20,8 +24,7 @@ describe('BoardUI', () => {
 
   it('縦座標（一-九）を表示する', () => {
     render(<BoardUI />);
-    const kanjiNumbers = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
-    kanjiNumbers.forEach(kanji => {
+    KANJI_NUMBERS.forEach(kanji => {
       const coords = screen.getAllByText(kanji);
       expect(coords.length).toBeGreaterThan(0);
     });
@@ -46,21 +49,30 @@ describe('BoardUI', () => {
     render(<BoardUI selectedCell={{ row: 4, col: 4 }} />);
     
     const cells = screen.getAllByRole('button');
-    const selectedCell = cells[4 * 9 + 4]; // 5行5列目（0-indexed）
+    const selectedCellIndex = getCellIndex(4, 4); // 5行5列目
+    const selectedCell = cells[selectedCellIndex];
     
     expect(selectedCell).toHaveClass('bg-blue-500');
   });
 
   it('移動可能なマスがハイライトされる', () => {
-    const highlightedCells = [
+    const highlightedCells: CellPosition[] = [
       { row: 3, col: 4 },
       { row: 5, col: 4 }
     ];
     render(<BoardUI highlightedCells={highlightedCells} />);
     
     const cells = screen.getAllByRole('button');
-    const firstHighlighted = cells[3 * 9 + 4];
-    const secondHighlighted = cells[5 * 9 + 4];
+    const firstHighlightedIndex = getCellIndex(
+      highlightedCells[0].row,
+      highlightedCells[0].col
+    );
+    const secondHighlightedIndex = getCellIndex(
+      highlightedCells[1].row,
+      highlightedCells[1].col
+    );
+    const firstHighlighted = cells[firstHighlightedIndex];
+    const secondHighlighted = cells[secondHighlightedIndex];
     
     expect(firstHighlighted).toHaveClass('bg-green-500');
     expect(secondHighlighted).toHaveClass('bg-green-500');

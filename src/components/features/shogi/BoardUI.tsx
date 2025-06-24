@@ -1,38 +1,50 @@
 'use client';
 
 import { clsx } from 'clsx';
-import React from 'react';
+import React, { useCallback } from 'react';
 
-export interface CellPosition {
-  row: number;
-  col: number;
+import { CellPosition } from '@/domain/models/position/types';
+
+interface Piece {
+  // TODO: Implement piece properties
+  name: string;
 }
 
 interface BoardUIProps {
   onCellClick?: (position: CellPosition) => void;
   selectedCell?: CellPosition | null;
   highlightedCells?: CellPosition[];
+  pieces?: { piece: Piece; position: CellPosition }[];
 }
+
+export const KANJI_NUMBERS = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
 
 export const BoardUI: React.FC<BoardUIProps> = ({
   onCellClick,
   selectedCell,
-  highlightedCells = []
+  highlightedCells = [],
 }) => {
-  const kanjiNumbers = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
-  
-  const isCellSelected = (row: number, col: number): boolean => {
-    return selectedCell?.row === row && selectedCell?.col === col;
-  };
-  
-  const isCellHighlighted = (row: number, col: number): boolean => {
-    return highlightedCells.some(cell => cell.row === row && cell.col === col);
-  };
-  
-  const handleCellClick = (row: number, col: number) => {
-    onCellClick?.({ row, col });
-  };
-  
+  const isCellSelected = useCallback(
+    (row: number, col: number): boolean => {
+      return selectedCell?.row === row && selectedCell?.col === col;
+    },
+    [selectedCell]
+  );
+
+  const isCellHighlighted = useCallback(
+    (row: number, col: number): boolean => {
+      return highlightedCells.some(cell => cell.row === row && cell.col === col);
+    },
+    [highlightedCells]
+  );
+
+  const handleCellClick = useCallback(
+    (row: number, col: number) => {
+      onCellClick?.({ row, col });
+    },
+    [onCellClick]
+  );
+
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
       <div className="aspect-square bg-amber-100 rounded-lg shadow-lg p-4">
@@ -52,12 +64,15 @@ export const BoardUI: React.FC<BoardUIProps> = ({
             <React.Fragment key={`row-${row}`}>
               {/* 左側の座標（一-九） */}
               <div className="flex items-center justify-center text-sm font-bold">
-                {kanjiNumbers[row]}
+                {KANJI_NUMBERS[row]}
               </div>
               
               {/* マス目 */}
               {Array.from({ length: 9 }, (_, col) => {
-                const actualCol = 8 - col; // 将棋盤は右から左へ
+                // 将棋盤は右から1, 2, ...と数えるため、CSS Gridの列番号(0-8)を将棋の筋(8-0)に変換する
+                // 例: col=0 (左端の列) -> actualCol=8 (9筋)
+                // 例: col=8 (右端の列) -> actualCol=0 (1筋)
+                const actualCol = 8 - col;
                 return (
                   <button
                     key={`cell-${row}-${col}`}
@@ -71,7 +86,7 @@ export const BoardUI: React.FC<BoardUIProps> = ({
                         'bg-amber-50': !isCellSelected(row, actualCol) && !isCellHighlighted(row, actualCol)
                       }
                     )}
-                    aria-label={`${kanjiNumbers[row]}${9 - col}`}
+                    aria-label={`${KANJI_NUMBERS[row]}${9 - col}`}
                   />
                 );
               })}
