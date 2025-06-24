@@ -1,9 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { IPiece } from '@/domain/models/piece/interface';
-import { PieceType, Player } from '@/domain/models/piece/types';
+import { Player } from '@/domain/models/piece/types';
+import { cn } from '@/lib/utils';
+
+import { pieceKanji, sizeClasses } from './const';
+import { isPromoted } from './utils';
 
 interface PieceUIProps {
   piece: IPiece;
@@ -12,87 +16,48 @@ interface PieceUIProps {
   className?: string;
 }
 
-const pieceKanji: Record<PieceType, string> = {
-  [PieceType.KING]: '王',
-  [PieceType.ROOK]: '飛',
-  [PieceType.BISHOP]: '角',
-  [PieceType.GOLD]: '金',
-  [PieceType.SILVER]: '銀',
-  [PieceType.KNIGHT]: '桂',
-  [PieceType.LANCE]: '香',
-  [PieceType.PAWN]: '歩',
-  [PieceType.DRAGON]: '竜',
-  [PieceType.HORSE]: '馬',
-  [PieceType.PROMOTED_SILVER]: '全',
-  [PieceType.PROMOTED_KNIGHT]: '圭',
-  [PieceType.PROMOTED_LANCE]: '杏',
-  [PieceType.TOKIN]: 'と',
-};
+export const PieceUI: React.FC<PieceUIProps> = React.memo(
+  ({ piece, size = 'md', onClick, className = '' }) => {
+    const kanji = pieceKanji[piece.type];
+    const isGote = piece.player === Player.GOTE;
+    const isPromotedPiece = isPromoted(piece.type);
 
-const isPromoted = (type: PieceType): boolean => {
-  return [
-    PieceType.DRAGON,
-    PieceType.HORSE,
-    PieceType.PROMOTED_SILVER,
-    PieceType.PROMOTED_KNIGHT,
-    PieceType.PROMOTED_LANCE,
-    PieceType.TOKIN,
-  ].includes(type);
-};
+    const handleClick = useCallback(() => {
+      onClick?.(piece);
+    }, [onClick, piece]);
 
-const sizeClasses = {
-  sm: 'w-8 h-8 text-sm',
-  md: 'w-12 h-12 text-base',
-  lg: 'w-16 h-16 text-lg',
-};
-
-export const PieceUI: React.FC<PieceUIProps> = ({ 
-  piece, 
-  size = 'md', 
-  onClick,
-  className = ''
-}) => {
-  const kanji = pieceKanji[piece.type];
-  const isGote = piece.player === Player.GOTE;
-  const isPromotedPiece = isPromoted(piece.type);
-
-  const handleClick = () => {
-    if (onClick) {
-      onClick(piece);
-    }
-  };
-
-  return (
-    <button
-      className={`
-        ${sizeClasses[size]}
-        ${isGote ? 'rotate-180' : ''}
-        bg-yellow-100
-        border-2
-        border-gray-800
-        rounded-lg
-        flex
-        items-center
-        justify-center
-        font-bold
-        cursor-pointer
-        transition-transform
-        hover:scale-110
-        shadow-md
-        ${className}
-      `}
-      onClick={handleClick}
-      draggable={true}
-      data-piece-type={piece.type}
-      data-player={piece.player}
-    >
-      <span
-        className={`select-none ${
-          isPromotedPiece ? 'text-red-600' : 'text-gray-900'
-        }`}
+    return (
+      <button
+        type="button"
+        className={cn(
+          sizeClasses[size],
+          'bg-yellow-100',
+          'border-2 border-gray-800 rounded-lg',
+          'flex items-center justify-center',
+          'font-bold cursor-pointer',
+          'transition-transform hover:scale-110 shadow-md',
+          {
+            'rotate-180': isGote,
+          },
+          className,
+        )}
+        onClick={handleClick}
+        draggable={true}
+        data-piece-type={piece.type}
+        data-player={piece.player}
+        aria-label={`${piece.player === Player.SENTE ? '先手' : '後手'}の${kanji}`}
       >
-        {kanji}
-      </span>
-    </button>
-  );
-};
+        <span
+          className={cn('select-none', {
+            'text-red-600': isPromotedPiece,
+            'text-gray-900': !isPromotedPiece,
+          })}
+        >
+          {kanji}
+        </span>
+      </button>
+    );
+  },
+);
+
+PieceUI.displayName = 'PieceUI';
