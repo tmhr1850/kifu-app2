@@ -130,9 +130,9 @@ export class SimpleAI implements IAIEngine {
       for (const move of moves) {
         const newBoard = board.applyMove(move);
         const opponent = currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE;
-        const eval = this.minimax(newBoard, depth - 1, opponent, alpha, beta, false);
-        maxEval = Math.max(maxEval, eval);
-        alpha = Math.max(alpha, eval);
+        const evaluation = this.minimax(newBoard, depth - 1, opponent, alpha, beta, false);
+        maxEval = Math.max(maxEval, evaluation);
+        alpha = Math.max(alpha, evaluation);
         if (beta <= alpha) {
           break; // ベータカット
         }
@@ -143,9 +143,9 @@ export class SimpleAI implements IAIEngine {
       for (const move of moves) {
         const newBoard = board.applyMove(move);
         const opponent = currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE;
-        const eval = this.minimax(newBoard, depth - 1, opponent, alpha, beta, true);
-        minEval = Math.min(minEval, eval);
-        beta = Math.min(beta, eval);
+        const evaluation = this.minimax(newBoard, depth - 1, opponent, alpha, beta, true);
+        minEval = Math.min(minEval, evaluation);
+        beta = Math.min(beta, evaluation);
         if (beta <= alpha) {
           break; // アルファカット
         }
