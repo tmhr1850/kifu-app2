@@ -1,17 +1,23 @@
-import { IBoard } from '@/domain/models/board/board'
+import { Board } from '@/domain/models/board/board'
 import { IPiece } from '@/domain/models/piece/interface'
 import { Player, PieceType } from '@/domain/models/piece/types'
-import { Position } from '@/domain/models/position/types'
+import { Position } from '@/domain/models/position'
 
-export type GameStatus = 'playing' | 'check' | 'checkmate' | 'stalemate'
+export type GameStatus = 'playing' | 'check' | 'checkmate' | 'stalemate' | 'resigned'
 
 export interface GameMove {
-  from?: Position
-  to: Position
   drop?: PieceType
+  from?: UIPosition
+  to?: UIPosition
   player: Player
-  piece?: IPiece
-  captured?: IPiece
+  piece?: {
+    type: PieceType
+    owner: Player
+  }
+  captured?: {
+    type: PieceType
+    owner: Player
+  }
   isPromotion?: boolean
   timestamp: Date
 }
@@ -22,7 +28,7 @@ export interface CapturedPieces {
 }
 
 export interface GameState {
-  board: IBoard
+  board: Board
   currentPlayer: Player
   history: GameMove[]
   capturedPieces: CapturedPieces
@@ -37,12 +43,20 @@ export interface MoveResult {
   gameState?: GameState
 }
 
+/**
+ * UI層で扱う座標 (1-9)
+ */
+export interface UIPosition {
+  row: number
+  column: number
+}
+
 export interface IGameUseCase {
   startNewGame(): GameState
-  movePiece(from: Position, to: Position, isPromotion?: boolean): MoveResult
-  dropPiece(pieceType: PieceType, to: Position): MoveResult
+  movePiece(from: UIPosition, to: UIPosition, isPromotion?: boolean): MoveResult
+  dropPiece(pieceType: PieceType, to: UIPosition): MoveResult
   getGameState(): GameState
-  getLegalMoves(from?: Position): Position[]
-  canPromote(from: Position, to: Position): boolean
+  getLegalMoves(from?: UIPosition): UIPosition[]
+  canPromote(piece: IPiece, to: Position): boolean
   resign(player: Player): void
 }
