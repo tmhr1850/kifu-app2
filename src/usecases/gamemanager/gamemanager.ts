@@ -248,8 +248,10 @@ export class GameManager implements IGameManager {
       )
       
       // AIの手を実行
-      if (move.drop) {
-        const result = this.gameUseCase.dropPiece(move.drop, move.to!)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((move as any).drop) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = this.gameUseCase.dropPiece((move as any).drop, move.to!)
         if (result.success && result.gameState) {
           this.state = {
             ...this.state,

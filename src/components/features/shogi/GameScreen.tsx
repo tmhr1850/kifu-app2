@@ -82,11 +82,11 @@ export const GameScreen: React.FC = () => {
   // 盤面の駒を配列に変換
   const boardPieces = useMemo(() => {
     const pieces: { piece: IPiece; position: UIPosition }[] = [];
-    for (let rank = 1; rank <= 9; rank++) {
-      for (let file = 1; file <= 9; file++) {
-        const piece = gameState.board.getPieceAt({ file, rank });
+    for (let row = 1; row <= 9; row++) {
+      for (let column = 1; column <= 9; column++) {
+        const piece = gameState.board.getPiece({ row, column });
         if (piece) {
-          pieces.push({ piece, position: { file, rank } });
+          pieces.push({ piece, position: { row, column } });
         }
       }
     }

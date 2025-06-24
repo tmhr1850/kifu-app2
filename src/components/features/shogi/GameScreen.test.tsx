@@ -9,7 +9,7 @@ vi.mock('@/usecases/gamemanager', () => ({
     getState: vi.fn(() => ({
       gameState: {
         board: {
-          getPieceAt: vi.fn(() => null)
+          getPiece: vi.fn(() => null)
         },
         currentPlayer: 'SENTE',
         history: [],
@@ -24,7 +24,7 @@ vi.mock('@/usecases/gamemanager', () => ({
     startNewGame: vi.fn(async () => ({
       gameState: {
         board: {
-          getPieceAt: vi.fn(() => null)
+          getPiece: vi.fn(() => null)
         },
         currentPlayer: 'SENTE',
         history: [],
