@@ -1,7 +1,6 @@
 'use client';
 
-import { clsx } from 'clsx';
-import React, { useCallback, useMemo, useState, useEffect, memo } from 'react';
+import React, { useCallback, useMemo, useState, memo } from 'react';
 
 import { IPiece } from '@/domain/models/piece/interface';
 import { UIPosition } from '@/types/common';
