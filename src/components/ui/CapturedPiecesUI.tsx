@@ -60,6 +60,9 @@ export function CapturedPiecesUI({
       [...capturedPieces].sort((a, b) => {
         const aIndex = pieceOrder.indexOf(a.type)
         const bIndex = pieceOrder.indexOf(b.type)
+        // pieceOrderにない駒は末尾に配置
+        if (aIndex === -1) return 1
+        if (bIndex === -1) return -1
         return aIndex - bIndex
       }),
     [capturedPieces],
@@ -75,18 +78,20 @@ export function CapturedPiecesUI({
       className={`p-2 sm:p-3 md:p-4 rounded-lg border-2 ${bgColor} ${borderColor}`}
     >
       <div className="flex flex-wrap gap-1 sm:gap-2">
-        {sortedPieces.map((piece) => (
-          <button
-            key={piece.type}
-            type="button"
-            data-testid="captured-piece"
-            onClick={() => onPieceClick(piece.type)}
-            disabled={!isMyTurn}
-            aria-label={`${pieceTypeToKanji[piece.type]}${
-              piece.count > 1 ? `（${piece.count}枚）` : ''
-            }`}
-            aria-pressed={selectedPiece === piece.type}
-            className={`
+        {sortedPieces.map((piece) => {
+          const kanji = pieceTypeToKanji[piece.type] ?? '?'
+          return (
+            <button
+              key={piece.type}
+              type="button"
+              data-testid="captured-piece"
+              onClick={() => onPieceClick(piece.type)}
+              disabled={!isMyTurn}
+              aria-label={`${kanji}${
+                piece.count > 1 ? `（${piece.count}枚）` : ''
+              }`}
+              aria-pressed={selectedPiece === piece.type}
+              className={`
               relative
               w-10 h-12 sm:w-12 sm:h-14 md:w-14 md:h-16
               bg-white rounded shadow-md
@@ -96,21 +101,21 @@ export function CapturedPiecesUI({
               ${isMyTurn ? 'hover:shadow-lg hover:scale-105 cursor-pointer' : 'opacity-60 cursor-not-allowed'}
               ${selectedPiece === piece.type ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
             `}
-          >
-            <span className="select-none">
-              {pieceTypeToKanji[piece.type]}
-            </span>
-            {piece.count > 1 && (
-              <span className="absolute bottom-0 right-0 text-xs sm:text-sm bg-gray-700 text-white rounded-tl px-1">
-                {piece.count}
-              </span>
-            )}
-          </button>
-        ))}
+            >
+              <span className="select-none">{kanji}</span>
+              {piece.count > 1 && (
+                <span className="absolute bottom-0 right-0 text-xs sm:text-sm bg-gray-700 text-white rounded-tl px-1">
+                  {piece.count}
+                </span>
+              )}
+            </button>
+          )
+        })}
         {sortedPieces.length === 0 && (
           <div
             className="text-gray-400 text-sm sm:text-base p-2"
             role="status"
+            aria-live="polite"
           >
             持ち駒なし
           </div>

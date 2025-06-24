@@ -188,6 +188,49 @@ describe('CapturedPiecesUI', () => {
     expect(pieceTexts).toEqual(['歩', '香', '桂', '銀', '金', '角', '飛'])
   })
 
+  it('歩が18枚の時も正しく表示される', () => {
+    const capturedPieces: CapturedPiece[] = [
+      { type: PieceType.PAWN, count: 18 },
+      { type: PieceType.GOLD, count: 1 },
+    ];
+
+    render(
+      <CapturedPiecesUI
+        capturedPieces={capturedPieces}
+        player={Player.SENTE}
+        isMyTurn={true}
+        onPieceClick={mockOnClick}
+      />,
+    );
+
+    expect(screen.getByText('歩')).toBeInTheDocument();
+    expect(screen.getByText('18')).toBeInTheDocument();
+    expect(screen.getByText('金')).toBeInTheDocument();
+  });
+
+  it('成駒と不成駒が混在していても正しくソートされる', () => {
+    const capturedPieces: CapturedPiece[] = [
+      { type: PieceType.DRAGON, count: 1 }, // 竜
+      { type: PieceType.ROOK, count: 1 }, // 飛
+      { type: PieceType.PAWN, count: 1 }, // 歩
+    ];
+
+    render(
+      <CapturedPiecesUI
+        capturedPieces={capturedPieces}
+        player={Player.SENTE}
+        isMyTurn={true}
+        onPieceClick={mockOnClick}
+      />,
+    );
+
+    const pieces = screen.getAllByTestId('captured-piece');
+    const pieceTexts = pieces.map((p) => p.textContent?.replace(/\\d+/, ''));
+
+    // 歩 → 飛 → 竜 の順になるはず
+    expect(pieceTexts).toEqual(['歩', '飛', '竜']);
+  });
+
   it('レスポンシブデザインで適切なサイズになる', () => {
     const capturedPieces: CapturedPiece[] = [
       { type: PieceType.PAWN, count: 1 },
