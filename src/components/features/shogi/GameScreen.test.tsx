@@ -41,7 +41,7 @@ describe('GameScreen', () => {
     render(<GameScreen />);
 
     // 将棋盤が表示される
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    expect(screen.getByLabelText('将棋盤 - 矢印キーで移動、EnterまたはSpaceで選択')).toBeInTheDocument();
 
     // 手番表示がある
     expect(screen.getByText(/先手番/)).toBeInTheDocument();
