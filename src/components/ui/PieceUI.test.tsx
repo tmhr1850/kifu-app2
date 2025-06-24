@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { vi } from 'vitest';
 
 import { createPiece } from '@/domain/models/piece/factory';
 import { PieceType, Player } from '@/domain/models/piece/types';
@@ -171,7 +172,7 @@ describe('PieceUI', () => {
 
     it('クリックイベントが発火する', async () => {
       const piece = createPiece(PieceType.KING, Player.SENTE, null);
-      const handleClick = jest.fn();
+      const handleClick = vi.fn();
       render(<PieceUI piece={piece} onClick={handleClick} />);
       
       const pieceElement = screen.getByRole('button');

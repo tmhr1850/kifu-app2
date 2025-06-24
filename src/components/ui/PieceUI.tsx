@@ -67,7 +67,6 @@ export const PieceUI: React.FC<PieceUIProps> = ({
       className={`
         ${sizeClasses[size]}
         ${isGote ? 'rotate-180' : ''}
-        ${isPromotedPiece ? 'text-red-600' : 'text-gray-900'}
         bg-yellow-100
         border-2
         border-gray-800
@@ -87,7 +86,13 @@ export const PieceUI: React.FC<PieceUIProps> = ({
       data-piece-type={piece.type}
       data-player={piece.player}
     >
-      <span className="select-none">{kanji}</span>
+      <span
+        className={`select-none ${
+          isPromotedPiece ? 'text-red-600' : 'text-gray-900'
+        }`}
+      >
+        {kanji}
+      </span>
     </button>
   );
 };
