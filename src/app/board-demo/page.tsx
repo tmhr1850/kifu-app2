@@ -45,6 +45,7 @@ export default function BoardDemoPage() {
         <div className="mb-4 text-center text-gray-600">
           <p>マスをクリックすると選択状態（青）になり、</p>
           <p>その周囲のマスが移動可能マス（緑）として表示されます。</p>
+          <p className="mt-2 font-semibold">キーボード操作：矢印キーで移動、Enter/Spaceで選択</p>
         </div>
         
         <BoardUI

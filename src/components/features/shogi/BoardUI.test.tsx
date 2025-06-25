@@ -153,4 +153,38 @@ describe('BoardUI', () => {
 
     expect(handlePieceClick).toHaveBeenCalledWith(piece);
   });
+
+  describe('キーボード操作', () => {
+    it('矢印キーで盤面を移動できる', () => {
+      render(<BoardUI size={9} />);
+      const centerCell = screen.getByTestId('cell-4-4');
+      centerCell.focus();
+
+      fireEvent.keyDown(centerCell, { key: 'ArrowUp' });
+      expect(screen.getByTestId('cell-3-4')).toHaveFocus();
+
+      fireEvent.keyDown(screen.getByTestId('cell-3-4'), { key: 'ArrowDown' });
+      expect(screen.getByTestId('cell-4-4')).toHaveFocus();
+
+      fireEvent.keyDown(centerCell, { key: 'ArrowLeft' });
+      expect(screen.getByTestId('cell-4-5')).toHaveFocus();
+
+      fireEvent.keyDown(screen.getByTestId('cell-4-5'), { key: 'ArrowRight' });
+      expect(screen.getByTestId('cell-4-4')).toHaveFocus();
+    });
+
+    it('EnterキーまたはSpaceキーでマスを選択できる', () => {
+      const handleCellClick = vi.fn();
+      render(<BoardUI onCellClick={handleCellClick} size={9} />);
+      
+      const cell = screen.getByTestId('cell-4-4');
+      cell.focus();
+      fireEvent.keyDown(cell, { key: 'Enter' });
+
+      expect(handleCellClick).toHaveBeenCalledWith({ row: 5, column: 5 });
+
+      fireEvent.keyDown(cell, { key: ' ' });
+      expect(handleCellClick).toHaveBeenCalledWith({ row: 5, column: 5 });
+    });
+  });
 });
