@@ -44,12 +44,29 @@ export const GameScreen: React.FC = () => {
     loadSavedGame();
   }, [gameManager]);
 
-  // エラーメッセージを3秒後に自動で消す
+  // エラーメッセージの表示時間をエラーの種類によって調整
   useEffect(() => {
     if (errorMessage) {
+      // エラーの種類によって表示時間を決定
+      let displayTime = 3000; // デフォルト3秒
+      
+      // 重要なエラーは長く表示
+      if (errorMessage.includes('チェックメイト') || 
+          errorMessage.includes('投了') ||
+          errorMessage.includes('ステイルメイト')) {
+        displayTime = 10000; // 10秒
+      } else if (errorMessage.includes('チェック')) {
+        displayTime = 5000; // 5秒
+      }
+      // 軽微なエラー（移動できない等）は短く
+      else if (errorMessage.includes('移動できません') || 
+               errorMessage.includes('その手は指せません')) {
+        displayTime = 2000; // 2秒
+      }
+      
       const timer = setTimeout(() => {
         setErrorMessage(null);
-      }, 3000);
+      }, displayTime);
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
@@ -79,7 +96,7 @@ export const GameScreen: React.FC = () => {
     return Array.from(pieceCount.entries()).map(([type, count]) => ({ type, count }));
   }, [gameState]);
 
-  // 盤面の駒を配列に変換
+  // 盤面の駒を配列に変換（board部分のみに依存するよう最適化）
   const boardPieces = useMemo(() => {
     const pieces: { piece: IPiece; position: UIPosition }[] = [];
     for (let row = 1; row <= 9; row++) {
@@ -91,7 +108,7 @@ export const GameScreen: React.FC = () => {
       }
     }
     return pieces;
-  }, [gameState]);
+  }, [gameState.board]);
 
   // セルがクリックされた時の処理
   const handleCellClick = useCallback(async (position: UIPosition) => {

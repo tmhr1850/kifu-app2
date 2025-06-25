@@ -56,4 +56,5 @@ export interface IGameUseCase {
     player: Player,
   ): UIPosition[]
   getBoardPieces: () => { piece: IPiece; position: UIPosition }[]
+  loadGameState(savedState: GameState): void
 }

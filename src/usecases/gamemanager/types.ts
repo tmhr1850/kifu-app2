@@ -13,6 +13,7 @@ export interface GameManagerState {
 export interface GameManagerConfig {
   playerColor?: Player
   aiThinkingTime?: number
+  aiDifficultyLevel?: number // 1-10の難易度レベル
   enableAutoSave?: boolean
 }
 

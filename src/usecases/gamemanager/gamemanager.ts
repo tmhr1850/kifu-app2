@@ -1,4 +1,4 @@
-import { Player, PieceType } from '@/domain/models/piece/types'
+import { Player, PieceType, Move, DropMove } from '@/domain/models/piece/types'
 import { IAIEngine } from '@/domain/services/ai-engine'
 import { UIPosition } from '@/types/common'
 import { SimpleAI } from '@/usecases/ai/simple-ai'
@@ -12,12 +12,56 @@ import {
 } from './types'
 
 const STORAGE_KEY = 'kifu-app-game-state'
+const DEFAULT_AI_THINKING_TIME = 1000 // デフォルトAI思考時間（ミリ秒）
+const DEFAULT_AI_DIFFICULTY_LEVEL = 5 // デフォルト難易度レベル（1-10）
+const AUTO_SAVE_DEBOUNCE_DELAY = 500 // 自動保存のdebounce遅延（ミリ秒）
+
+// 型ガード関数
+function isDropMove(move: Move): move is DropMove {
+  return 'drop' in move;
+}
+
+// debounce関数
+function debounce(func: () => void, delay: number): () => void {
+  let timeoutId: NodeJS.Timeout | null = null;
+  return () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(func, delay);
+  };
+}
+
+// シンプルなロガー
+class Logger {
+  static error(message: string, error?: unknown): void {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`[GameManager] ${message}`, error);
+    } else {
+      // プロダクションでは外部ログサービスに送信する等の処理を追加可能
+      console.error(`[GameManager] ${message}`);
+    }
+  }
+  
+  static warn(message: string): void {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[GameManager] ${message}`);
+    }
+  }
+  
+  static info(message: string): void {
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[GameManager] ${message}`);
+    }
+  }
+}
 
 export class GameManager implements IGameManager {
   private gameUseCase: GameUseCase
   private aiEngine: IAIEngine
   private state: GameManagerState
   private config: Required<GameManagerConfig>
+  private saveGameDebounced: () => void
 
   constructor(aiEngine?: IAIEngine) {
     this.gameUseCase = new GameUseCase()
@@ -33,9 +77,15 @@ export class GameManager implements IGameManager {
     
     this.config = {
       playerColor: Player.SENTE,
-      aiThinkingTime: 1000,
+      aiThinkingTime: DEFAULT_AI_THINKING_TIME,
+      aiDifficultyLevel: DEFAULT_AI_DIFFICULTY_LEVEL,
       enableAutoSave: true
     }
+    
+    // 自動保存をdebounce（500ms）
+    this.saveGameDebounced = debounce(() => {
+      this.saveGame().catch((error) => Logger.error('Auto save failed', error));
+    }, AUTO_SAVE_DEBOUNCE_DELAY)
   }
 
   async startNewGame(config?: GameManagerConfig): Promise<GameManagerState> {
@@ -90,7 +140,7 @@ export class GameManager implements IGameManager {
       }
       
       if (this.config.enableAutoSave) {
-        await this.saveGame()
+        this.saveGameDebounced()
       }
       
       // ゲームが終了していない場合、AIの手を実行
@@ -105,6 +155,19 @@ export class GameManager implements IGameManager {
     }
     
     return this.state
+  }
+
+  // 難易度レベルに応じて思考時間を調整
+  private getAdjustedThinkingTime(): number {
+    const baseTime = this.config.aiThinkingTime || DEFAULT_AI_THINKING_TIME
+    const level = this.config.aiDifficultyLevel || DEFAULT_AI_DIFFICULTY_LEVEL
+    
+    // 難易度1（簡単）: baseTime * 0.3
+    // 難易度5（中級）: baseTime * 1.0
+    // 難易度10（上級）: baseTime * 2.0
+    const multiplier = 0.3 + (level - 1) * (1.7 / 9)
+    
+    return Math.round(baseTime * multiplier)
   }
 
   async dropPiece(pieceType: PieceType, to: UIPosition): Promise<GameManagerState> {
@@ -128,7 +191,7 @@ export class GameManager implements IGameManager {
       }
       
       if (this.config.enableAutoSave) {
-        await this.saveGame()
+        this.saveGameDebounced()
       }
       
       // ゲームが終了していない場合、AIの手を実行
@@ -189,10 +252,10 @@ export class GameManager implements IGameManager {
       const saved: SavedGameState = JSON.parse(savedData)
       
       // 保存されたゲーム状態を復元
-      // TODO: Boardの状態を復元する機能を実装
+      this.gameUseCase.loadGameState(saved.gameState)
       
       this.state = {
-        gameState: saved.gameState,
+        gameState: this.gameUseCase.getGameState(),
         isAIThinking: false,
         playerColor: saved.playerColor,
         aiColor: saved.playerColor === Player.SENTE ? Player.GOTE : Player.SENTE,
@@ -207,7 +270,7 @@ export class GameManager implements IGameManager {
       
       return this.state
     } catch (error) {
-      console.error('Failed to load game:', error)
+      Logger.error('Failed to load game', error)
       return null
     }
   }
@@ -222,7 +285,7 @@ export class GameManager implements IGameManager {
       
       localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData))
     } catch (error) {
-      console.error('Failed to save game:', error)
+      Logger.error('Failed to save game', error)
     }
   }
 
@@ -244,14 +307,17 @@ export class GameManager implements IGameManager {
       const move = await this.aiEngine.selectMove(
         board,
         this.state.aiColor,
-        this.config.aiThinkingTime
+        this.getAdjustedThinkingTime()
       )
       
       // AIの手を実行
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((move as any).drop) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = this.gameUseCase.dropPiece((move as any).drop, move.to!)
+      if (isDropMove(move)) {
+        // Position (0-based) を UIPosition (1-based) に変換
+        const toUI: UIPosition = { 
+          row: move.to.row + 1, 
+          column: move.to.column + 1 
+        }
+        const result = this.gameUseCase.dropPiece(move.drop, toUI)
         if (result.success && result.gameState) {
           this.state = {
             ...this.state,
@@ -261,9 +327,18 @@ export class GameManager implements IGameManager {
           }
         }
       } else if (move.from && move.to) {
+        // Position (0-based) を UIPosition (1-based) に変換
+        const fromUI: UIPosition = { 
+          row: move.from.row + 1, 
+          column: move.from.column + 1 
+        }
+        const toUI: UIPosition = { 
+          row: move.to.row + 1, 
+          column: move.to.column + 1 
+        }
         const result = this.gameUseCase.movePiece(
-          move.from,
-          move.to,
+          fromUI,
+          toUI,
           move.isPromotion
         )
         if (result.success && result.gameState) {
@@ -277,10 +352,10 @@ export class GameManager implements IGameManager {
       }
       
       if (this.config.enableAutoSave) {
-        await this.saveGame()
+        this.saveGameDebounced()
       }
     } catch (error) {
-      console.error('AI move failed:', error)
+      Logger.error('AI move failed', error)
       this.state = {
         ...this.state,
         isAIThinking: false,

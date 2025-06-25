@@ -39,13 +39,26 @@ export interface Position {
 export { Position as PositionClass } from '../position';
 
 /**
- * 移動可能な位置の型
+ * 通常の駒移動の型
  */
-export interface Move {
+export interface PieceMove {
   from: Position;
   to: Position;
   isPromotion?: boolean; // 成りの可否
 }
+
+/**
+ * 持ち駒を打つ移動の型
+ */
+export interface DropMove {
+  drop: PieceType;
+  to: Position;
+}
+
+/**
+ * 移動可能な位置の型（通常移動と持ち駒の両方をサポート）
+ */
+export type Move = PieceMove | DropMove;
 
 /**
  * 持ち駒の最大枚数を定義する定数

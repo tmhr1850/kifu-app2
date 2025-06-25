@@ -26,7 +26,8 @@
       "Bash(npm test:*)",
       "Bash(npx tsc:*)",
       "Bash(timeout 90 npm run build)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(gh run list:*)"
     ],
     "deny": []
   }
