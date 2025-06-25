@@ -53,6 +53,16 @@ export default function BoardDemoPage() {
           onCellClick={handleCellClick}
         />
         
+        <h2 className="text-2xl font-bold text-center mb-4 mt-8">
+          3x3 Board
+        </h2>
+        <BoardUI
+          size={3}
+          selectedCell={selectedCell}
+          highlightedCells={highlightedCells}
+          onCellClick={handleCellClick}
+        />
+        
         <div className="mt-8 text-center">
           {selectedCell && (
             <p className="text-lg">

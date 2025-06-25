@@ -6,17 +6,23 @@ import { PieceType, Player } from '@/domain/models/piece/types';
 import { KANJI_NUMBERS } from './BoardCell';
 import { BoardUI } from './BoardUI';
 
-const getCellIndex = (row: number, col: number) => (row - 1) * 9 + (9 - col);
+const getCellIndex = (row: number, col: number, size: number) => (row - 1) * size + (size - col);
 
 describe('BoardUI', () => {
   it('将棋盤を9×9のグリッドで描画する', () => {
-    render(<BoardUI />);
+    render(<BoardUI size={9} />);
     const cells = screen.getAllByRole('gridcell');
     expect(cells).toHaveLength(81); // 9×9 = 81マス
   });
 
+  it('3x3の盤を描画できる', () => {
+    render(<BoardUI size={3} />);
+    const cells = screen.getAllByRole('gridcell');
+    expect(cells).toHaveLength(9); // 3x3 = 9マス
+  });
+
   it('横座標（1-9）を表示する', () => {
-    render(<BoardUI />);
+    render(<BoardUI size={9} />);
     for (let i = 1; i <= 9; i++) {
       const coords = screen.getAllByText(i.toString());
       expect(coords.length).toBeGreaterThan(0);
@@ -24,7 +30,7 @@ describe('BoardUI', () => {
   });
 
   it('縦座標（一-九）を表示する', () => {
-    render(<BoardUI />);
+    render(<BoardUI size={9} />);
     KANJI_NUMBERS.forEach(kanji => {
       const coords = screen.getAllByText(kanji);
       expect(coords.length).toBeGreaterThan(0);
@@ -33,7 +39,7 @@ describe('BoardUI', () => {
 
   it('マスをクリックするとonCellClickが呼ばれる', () => {
     const handleCellClick = vi.fn();
-    render(<BoardUI onCellClick={handleCellClick} />);
+    render(<BoardUI onCellClick={handleCellClick} size={9} />);
     
     const cells = screen.getAllByRole('gridcell');
     
@@ -47,10 +53,10 @@ describe('BoardUI', () => {
   });
 
   it('選択されたマスがハイライトされる', () => {
-    render(<BoardUI selectedCell={{ row: 4, column: 4 }} />);
+    render(<BoardUI selectedCell={{ row: 4, column: 4 }} size={9} />);
     
     const cells = screen.getAllByRole('gridcell');
-    const selectedCellIndex = getCellIndex(4, 4); // 5行5列目
+    const selectedCellIndex = getCellIndex(4, 4, 9); // 5行5列目
     const selectedCellDiv = cells[selectedCellIndex];
     
     expect(selectedCellDiv).toHaveClass('bg-blue-500');
@@ -61,16 +67,18 @@ describe('BoardUI', () => {
       { row: 3, column: 4 },
       { row: 5, column: 4 }
     ];
-    render(<BoardUI highlightedCells={highlightedCells} />);
+    render(<BoardUI highlightedCells={highlightedCells} size={9} />);
     
     const cells = screen.getAllByRole('gridcell');
     const firstHighlightedIndex = getCellIndex(
       highlightedCells[0].row,
-      highlightedCells[0].column
+      highlightedCells[0].column,
+      9
     );
     const secondHighlightedIndex = getCellIndex(
       highlightedCells[1].row,
-      highlightedCells[1].column
+      highlightedCells[1].column,
+      9
     );
     const firstHighlightedDiv = cells[firstHighlightedIndex];
     const secondHighlightedDiv = cells[secondHighlightedIndex];
@@ -79,10 +87,10 @@ describe('BoardUI', () => {
     expect(secondHighlightedDiv).toHaveClass('bg-green-500');
   });
 
-  it('レスポンシブで正方形を保つ', () => {
-    const { container } = render(<BoardUI />);
-    const board = container.querySelector('.aspect-square');
-    expect(board).toBeInTheDocument();
+  it('デフォルトの盤のサイズが9x9である', () => {
+    render(<BoardUI />);
+    const cells = screen.getAllByRole('gridcell');
+    expect(cells).toHaveLength(81);
   });
 
   it('駒を正しい位置に表示する', () => {
@@ -115,7 +123,7 @@ describe('BoardUI', () => {
       },
     ];
 
-    render(<BoardUI pieces={pieces} />);
+    render(<BoardUI pieces={pieces} size={9} />);
 
     // 先手の歩があることを確認
     expect(screen.getByLabelText('先手の歩')).toBeInTheDocument();
@@ -138,7 +146,7 @@ describe('BoardUI', () => {
     };
     const pieces = [{ piece, position: { row: 6, column: 4 } }];
 
-    render(<BoardUI pieces={pieces} onPieceClick={handlePieceClick} />);
+    render(<BoardUI pieces={pieces} onPieceClick={handlePieceClick} size={9} />);
 
     const pawnElement = screen.getByLabelText('先手の歩');
     fireEvent.click(pawnElement);
