@@ -12,24 +12,44 @@ import {
 } from './types'
 
 const STORAGE_KEY = 'kifu-app-game-state'
-const DEFAULT_AI_THINKING_TIME = 1000 // デフォルトAI思考時間（ミリ秒）
-const DEFAULT_AI_DIFFICULTY_LEVEL = 5 // デフォルト難易度レベル（1-10）
-const AUTO_SAVE_DEBOUNCE_DELAY = 500 // 自動保存のdebounce遅延（ミリ秒）
+const DEFAULT_AI_THINKING_TIME = 1000
+const DEFAULT_AI_DIFFICULTY_LEVEL = 5
+const AUTO_SAVE_DEBOUNCE_DELAY = 500
 
 // 型ガード関数
 function isDropMove(move: Move): move is DropMove {
   return 'drop' in move;
 }
 
-// debounce関数
-function debounce(func: () => void, delay: number): () => void {
-  let timeoutId: NodeJS.Timeout | null = null;
-  return () => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+// メモリリークを防ぐ改良版debounce関数
+class DebouncedFunction {
+  private timeoutId: NodeJS.Timeout | null = null;
+  private readonly func: () => void;
+  private readonly delay: number;
+
+  constructor(func: () => void, delay: number) {
+    this.func = func;
+    this.delay = delay;
+  }
+
+  call(): void {
+    this.cancel();
+    this.timeoutId = setTimeout(() => {
+      this.func();
+      this.timeoutId = null;
+    }, this.delay);
+  }
+
+  cancel(): void {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
     }
-    timeoutId = setTimeout(func, delay);
-  };
+  }
+
+  dispose(): void {
+    this.cancel();
+  }
 }
 
 // シンプルなロガー
@@ -38,7 +58,6 @@ class Logger {
     if (process.env.NODE_ENV === 'development') {
       console.error(`[GameManager] ${message}`, error);
     } else {
-      // プロダクションでは外部ログサービスに送信する等の処理を追加可能
       console.error(`[GameManager] ${message}`);
     }
   }
@@ -56,12 +75,55 @@ class Logger {
   }
 }
 
+// LocalStorage操作を非同期化
+class AsyncStorage {
+  static async getItem(key: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      // 次のイベントループで実行
+      setTimeout(() => {
+        try {
+          resolve(localStorage.getItem(key));
+        } catch {
+          resolve(null);
+        }
+      }, 0);
+    });
+  }
+
+  static async setItem(key: string, value: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        try {
+          localStorage.setItem(key, value);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      }, 0);
+    });
+  }
+
+  static async removeItem(key: string): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          // エラーを無視
+        }
+        resolve();
+      }, 0);
+    });
+  }
+}
+
 export class GameManager implements IGameManager {
   private gameUseCase: GameUseCase
   private aiEngine: IAIEngine
   private state: GameManagerState
   private config: Required<GameManagerConfig>
-  private saveGameDebounced: () => void
+  private saveGameDebounced: DebouncedFunction
+  private disposed = false
 
   constructor(aiEngine?: IAIEngine) {
     this.gameUseCase = new GameUseCase()
@@ -82,13 +144,25 @@ export class GameManager implements IGameManager {
       enableAutoSave: true
     }
     
-    // 自動保存をdebounce（500ms）
-    this.saveGameDebounced = debounce(() => {
-      this.saveGame().catch((error) => Logger.error('Auto save failed', error));
-    }, AUTO_SAVE_DEBOUNCE_DELAY)
+    // 自動保存をdebounce（メモリリーク対策版）
+    this.saveGameDebounced = new DebouncedFunction(
+      () => this.saveGame().catch((error) => Logger.error('Auto save failed', error)),
+      AUTO_SAVE_DEBOUNCE_DELAY
+    );
+  }
+
+  // リソースのクリーンアップメソッド
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.saveGameDebounced.dispose();
   }
 
   async startNewGame(config?: GameManagerConfig): Promise<GameManagerState> {
+    if (this.disposed) {
+      throw new Error('GameManager has been disposed');
+    }
+
     this.config = {
       ...this.config,
       ...config
@@ -120,6 +194,10 @@ export class GameManager implements IGameManager {
     to: UIPosition, 
     isPromotion?: boolean
   ): Promise<GameManagerState> {
+    if (this.disposed) {
+      throw new Error('GameManager has been disposed');
+    }
+
     // AIが思考中の場合は操作を受け付けない
     if (this.state.isAIThinking) {
       return this.state
@@ -140,7 +218,7 @@ export class GameManager implements IGameManager {
       }
       
       if (this.config.enableAutoSave) {
-        this.saveGameDebounced()
+        this.saveGameDebounced.call()
       }
       
       // ゲームが終了していない場合、AIの手を実行
@@ -157,20 +235,14 @@ export class GameManager implements IGameManager {
     return this.state
   }
 
-  // 難易度レベルに応じて思考時間を調整
-  private getAdjustedThinkingTime(): number {
-    const baseTime = this.config.aiThinkingTime || DEFAULT_AI_THINKING_TIME
-    const level = this.config.aiDifficultyLevel || DEFAULT_AI_DIFFICULTY_LEVEL
-    
-    // 難易度1（簡単）: baseTime * 0.3
-    // 難易度5（中級）: baseTime * 1.0
-    // 難易度10（上級）: baseTime * 2.0
-    const multiplier = 0.3 + (level - 1) * (1.7 / 9)
-    
-    return Math.round(baseTime * multiplier)
-  }
+  async dropPiece(
+    pieceType: PieceType,
+    to: UIPosition
+  ): Promise<GameManagerState> {
+    if (this.disposed) {
+      throw new Error('GameManager has been disposed');
+    }
 
-  async dropPiece(pieceType: PieceType, to: UIPosition): Promise<GameManagerState> {
     // AIが思考中の場合は操作を受け付けない
     if (this.state.isAIThinking) {
       return this.state
@@ -181,7 +253,11 @@ export class GameManager implements IGameManager {
       return this.state
     }
     
-    const result = this.gameUseCase.dropPiece(pieceType, to)
+    const result = this.gameUseCase.dropPiece(
+      pieceType,
+      to,
+      this.state.playerColor
+    )
     
     if (result.success && result.gameState) {
       this.state = {
@@ -191,7 +267,7 @@ export class GameManager implements IGameManager {
       }
       
       if (this.config.enableAutoSave) {
-        this.saveGameDebounced()
+        this.saveGameDebounced.call()
       }
       
       // ゲームが終了していない場合、AIの手を実行
@@ -209,6 +285,10 @@ export class GameManager implements IGameManager {
   }
 
   async resign(player: Player): Promise<GameManagerState> {
+    if (this.disposed) {
+      throw new Error('GameManager has been disposed');
+    }
+
     this.gameUseCase.resign(player)
     this.state = {
       ...this.state,
@@ -243,8 +323,12 @@ export class GameManager implements IGameManager {
   }
 
   async loadGame(): Promise<GameManagerState | null> {
+    if (this.disposed) {
+      throw new Error('GameManager has been disposed');
+    }
+
     try {
-      const savedData = localStorage.getItem(STORAGE_KEY)
+      const savedData = await AsyncStorage.getItem(STORAGE_KEY)
       if (!savedData) {
         return null
       }
@@ -276,6 +360,8 @@ export class GameManager implements IGameManager {
   }
 
   async saveGame(): Promise<void> {
+    if (this.disposed) return;
+
     try {
       const saveData: SavedGameState = {
         gameState: this.state.gameState,
@@ -283,83 +369,82 @@ export class GameManager implements IGameManager {
         timestamp: new Date()
       }
       
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData))
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(saveData))
     } catch (error) {
       Logger.error('Failed to save game', error)
     }
   }
 
   clearSavedGame(): void {
-    localStorage.removeItem(STORAGE_KEY)
+    AsyncStorage.removeItem(STORAGE_KEY).catch(error => 
+      Logger.error('Failed to clear saved game', error)
+    );
   }
 
   private async executeAIMove(): Promise<void> {
+    if (this.disposed) return;
+
     this.state = {
       ...this.state,
       isAIThinking: true
     }
     
     try {
-      // Boardインスタンスを取得
-      const board = this.state.gameState.board
+      // AI思考時間のシミュレーション
+      await new Promise(resolve => setTimeout(resolve, this.config.aiThinkingTime))
       
-      // AIに思考させる
-      const move = await this.aiEngine.selectMove(
-        board,
-        this.state.aiColor,
-        this.getAdjustedThinkingTime()
+      const move = await this.aiEngine.think(
+        this.state.gameState,
+        this.state.aiColor
       )
       
-      // AIの手を実行
-      if (isDropMove(move)) {
-        // Position (0-based) を UIPosition (1-based) に変換
-        const toUI: UIPosition = { 
-          row: move.to.row + 1, 
-          column: move.to.column + 1 
+      if (!move || this.disposed) {
+        this.state = {
+          ...this.state,
+          isAIThinking: false
         }
-        const result = this.gameUseCase.dropPiece(move.drop, toUI)
-        if (result.success && result.gameState) {
-          this.state = {
-            ...this.state,
-            gameState: result.gameState,
-            isAIThinking: false,
-            error: undefined
-          }
-        }
-      } else if (move.from && move.to) {
-        // Position (0-based) を UIPosition (1-based) に変換
-        const fromUI: UIPosition = { 
-          row: move.from.row + 1, 
-          column: move.from.column + 1 
-        }
-        const toUI: UIPosition = { 
-          row: move.to.row + 1, 
-          column: move.to.column + 1 
-        }
-        const result = this.gameUseCase.movePiece(
-          fromUI,
-          toUI,
-          move.isPromotion
-        )
-        if (result.success && result.gameState) {
-          this.state = {
-            ...this.state,
-            gameState: result.gameState,
-            isAIThinking: false,
-            error: undefined
-          }
-        }
+        return
       }
       
-      if (this.config.enableAutoSave) {
-        this.saveGameDebounced()
+      let result
+      if (isDropMove(move)) {
+        result = this.gameUseCase.dropPiece(
+          move.pieceType,
+          move.to,
+          this.state.aiColor
+        )
+      } else {
+        result = this.gameUseCase.movePiece(
+          move.from,
+          move.to,
+          move.promote
+        )
+      }
+      
+      if (result.success && result.gameState) {
+        this.state = {
+          ...this.state,
+          gameState: result.gameState,
+          isAIThinking: false,
+          error: undefined
+        }
+        
+        if (this.config.enableAutoSave) {
+          this.saveGameDebounced.call()
+        }
+      } else {
+        this.state = {
+          ...this.state,
+          isAIThinking: false,
+          error: result.error
+        }
       }
     } catch (error) {
       Logger.error('AI move failed', error)
       this.state = {
         ...this.state,
         isAIThinking: false,
-        error: error instanceof Error ? error : new Error('AI思考中にエラーが発生しました')
+        error: new Error('AI思考中にエラーが発生しました')
       }
     }
   }

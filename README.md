@@ -1,33 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kifu App 2 - 将棋アプリケーション
+
+![Next.js](https://img.shields.io/badge/Next.js-15.3.3-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38B2AC)
+
+## 概要
+
+Kifu App 2は、Next.js 15とTypeScriptで構築された高性能な将棋アプリケーションです。クリーンアーキテクチャとTDD（テスト駆動開発）の原則に基づいて開発されています。
+
+## 特徴
+
+- 🎮 **インタラクティブな将棋盤**: 直感的なUIでスムーズな駒の操作
+- 🤖 **AI対戦**: Web Workerを使用した非同期AI処理
+- 📱 **レスポンシブデザイン**: モバイル・タブレット・デスクトップ対応
+- ♿ **アクセシビリティ**: キーボード操作・スクリーンリーダー対応
+- ⚡ **高速パフォーマンス**: 最適化されたレンダリングとメモリ管理
+- 💾 **自動保存**: ゲーム状態の自動保存と復元
+
+## 技術スタック
+
+- **フレームワーク**: Next.js 15.3.3 (App Router)
+- **言語**: TypeScript 5.0
+- **スタイリング**: TailwindCSS v4
+- **アーキテクチャ**: クリーンアーキテクチャ
+- **開発手法**: TDD (テスト駆動開発)
 
 ## Getting Started
 
-First, run the development server:
+開発サーバーの起動:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+[http://localhost:3000](http://localhost:3000) をブラウザで開いてください。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## コマンド一覧
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev      # 開発サーバーの起動
+npm run build    # プロダクションビルド
+npm run start    # プロダクションサーバーの起動
+npm run lint     # ESLintの実行
+```
 
-## Learn More
+## プロジェクト構成
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/              # Next.js App Router
+├── components/       # UIコンポーネント
+│   ├── ui/          # 基本UIコンポーネント
+│   └── features/    # 機能別コンポーネント
+├── domain/          # ドメイン層（ビジネスロジック）
+├── usecases/        # ユースケース層
+├── infrastructure/  # インフラストラクチャ層
+├── hooks/           # カスタムフック
+├── workers/         # Web Workers
+├── utils/           # ユーティリティ関数
+└── styles/          # スタイルシート
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## パフォーマンス最適化
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 実装済みの最適化
+
+1. **React最適化**
+   - React.memoとuseMemoによる再レンダリング削減
+   - useReducerによるState管理の改善
+   - コンポーネントの適切な分割
+
+2. **AI処理の最適化**
+   - Web Workerによるバックグラウンド処理
+   - Alpha-Beta枝刈りアルゴリズム
+   - 評価関数のキャッシュ
+
+3. **メモリ管理**
+   - GameManagerのライフサイクル管理
+   - 適切なクリーンアップ処理
+   - 非同期LocalStorage操作
+
+4. **UI/UX改善**
+   - スムーズなアニメーション
+   - タッチデバイス最適化
+   - エラー通知の改善
+
+## アクセシビリティ
+
+- WAI-ARIA準拠のマークアップ
+- キーボード完全対応（矢印キー、Tab、Enter）
+- スクリーンリーダー対応
+- 高コントラストモード対応
+- モーション軽減設定の尊重
+
+## ブラウザ対応
+
+- Chrome/Edge (最新版)
+- Firefox (最新版)
+- Safari (最新版)
+- モバイルブラウザ対応
 
 ## Deploy on Vercel
 
