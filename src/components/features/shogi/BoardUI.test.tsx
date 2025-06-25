@@ -11,7 +11,7 @@ const getCellIndex = (row: number, col: number) => (row - 1) * 9 + (9 - col);
 describe('BoardUI', () => {
   it('将棋盤を9×9のグリッドで描画する', () => {
     render(<BoardUI />);
-    const cells = screen.getAllByRole('button');
+    const cells = screen.getAllByRole('gridcell');
     expect(cells).toHaveLength(81); // 9×9 = 81マス
   });
 
@@ -35,7 +35,7 @@ describe('BoardUI', () => {
     const handleCellClick = vi.fn();
     render(<BoardUI onCellClick={handleCellClick} />);
     
-    const cells = screen.getAllByRole('button');
+    const cells = screen.getAllByRole('gridcell');
     
     // 左上のマス（9一）をクリック
     fireEvent.click(cells[0]);
@@ -49,10 +49,9 @@ describe('BoardUI', () => {
   it('選択されたマスがハイライトされる', () => {
     render(<BoardUI selectedCell={{ row: 4, column: 4 }} />);
     
-    const cells = screen.getAllByRole('button');
+    const cells = screen.getAllByRole('gridcell');
     const selectedCellIndex = getCellIndex(4, 4); // 5行5列目
-    const selectedCellButton = cells[selectedCellIndex];
-    const selectedCellDiv = selectedCellButton.parentElement;
+    const selectedCellDiv = cells[selectedCellIndex];
     
     expect(selectedCellDiv).toHaveClass('bg-blue-500');
   });
@@ -64,7 +63,7 @@ describe('BoardUI', () => {
     ];
     render(<BoardUI highlightedCells={highlightedCells} />);
     
-    const cells = screen.getAllByRole('button');
+    const cells = screen.getAllByRole('gridcell');
     const firstHighlightedIndex = getCellIndex(
       highlightedCells[0].row,
       highlightedCells[0].column
@@ -73,10 +72,8 @@ describe('BoardUI', () => {
       highlightedCells[1].row,
       highlightedCells[1].column
     );
-    const firstHighlightedButton = cells[firstHighlightedIndex];
-    const secondHighlightedButton = cells[secondHighlightedIndex];
-    const firstHighlightedDiv = firstHighlightedButton.parentElement;
-    const secondHighlightedDiv = secondHighlightedButton.parentElement;
+    const firstHighlightedDiv = cells[firstHighlightedIndex];
+    const secondHighlightedDiv = cells[secondHighlightedIndex];
     
     expect(firstHighlightedDiv).toHaveClass('bg-green-500');
     expect(secondHighlightedDiv).toHaveClass('bg-green-500');

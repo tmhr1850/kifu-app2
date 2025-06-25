@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useState, memo } from 'react';
+import React, { useCallback, useMemo, useState, memo, useRef, useEffect } from 'react';
 
 import { IPiece } from '@/domain/models/piece/interface';
 import { UIPosition } from '@/types/common';
@@ -25,6 +25,19 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
 }) => {
   // キーボードナビゲーション用のフォーカス位置
   const [focusedCell, setFocusedCell] = useState<UIPosition>({ row: 5, column: 5 });
+  const cellRefs = useRef<Array<Array<HTMLDivElement | null>>>(
+    Array(9).fill(null).map(() => Array(9).fill(null))
+  );
+
+  useEffect(() => {
+    // focusedCellが変更されたら、対応するセルにフォーカスを当てる
+    // uiRowは1-9, uiColは1-9
+    // rowIndexは0-8, colIndexは0-8
+    const rowIndex = focusedCell.row - 1;
+    const colIndex = 9 - focusedCell.column;
+    cellRefs.current[rowIndex]?.[colIndex]?.focus();
+  }, [focusedCell]);
+
   // 駒の位置をマップに変換して高速検索可能にする
   const piecesMap = useMemo(() => {
     const map = new Map<string, IPiece>();
@@ -52,50 +65,51 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
 
 
   // キーボードナビゲーションのハンドラー
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((event: React.KeyboardEvent, position: UIPosition) => {
     const { key } = event;
-    const { row, column } = focusedCell;
+
+    let newPosition = { ...position };
 
     switch (key) {
       case 'ArrowUp':
         event.preventDefault();
-        if (row > 1) setFocusedCell({ row: row - 1, column });
+        if (position.row > 1) newPosition = { ...newPosition, row: position.row - 1 };
         break;
       case 'ArrowDown':
         event.preventDefault();
-        if (row < 9) setFocusedCell({ row: row + 1, column });
+        if (position.row < 9) newPosition = { ...newPosition, row: position.row + 1 };
         break;
       case 'ArrowLeft':
         event.preventDefault();
-        if (column < 9) setFocusedCell({ row, column: column + 1 });
+        if (position.column < 9) newPosition = { ...newPosition, column: position.column + 1 };
         break;
       case 'ArrowRight':
         event.preventDefault();
-        if (column > 1) setFocusedCell({ row, column: column - 1 });
+        if (position.column > 1) newPosition = { ...newPosition, column: position.column - 1 };
         break;
       case 'Enter':
-      case ' ':
+      case ' ': // Space key
         event.preventDefault();
         // フォーカス位置の駒または空のセルをクリック
-        const piece = piecesMap.get(`${row}-${column}`);
+        const piece = piecesMap.get(`${position.row}-${position.column}`);
         if (piece) {
           onPieceClick?.(piece);
         } else {
-          onCellClick?.({ row, column });
+          onCellClick?.(position);
         }
-        break;
+        return; // フォーカス変更はしないのでここで終了
     }
-  }, [focusedCell, piecesMap, onCellClick, onPieceClick]);
+    setFocusedCell(newPosition);
+
+  }, [piecesMap, onCellClick, onPieceClick]);
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
       <div className="aspect-square bg-amber-100 rounded-lg shadow-lg p-4">
         <div 
-          className="grid grid-cols-[auto_repeat(9,1fr)] grid-rows-[auto_repeat(9,1fr)] gap-0 h-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-          tabIndex={0}
-          onKeyDown={handleKeyDown}
+          className="grid grid-cols-[auto_repeat(9,1fr)] grid-rows-[auto_repeat(9,1fr)] gap-0 h-full"
           role="grid"
-          aria-label="将棋盤 - 矢印キーで移動、EnterまたはSpaceで選択"
+          aria-label="将棋盤"
         >
           {/* 左上の空白セル */}
           <div className=""></div>
@@ -125,6 +139,11 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
                 return (
                   <BoardCell
                     key={`cell-${rowIndex}-${colIndex}`}
+                    ref={(el) => {
+                      if (cellRefs.current[rowIndex]) {
+                        cellRefs.current[rowIndex][colIndex] = el;
+                      }
+                    }}
                     rowIndex={rowIndex}
                     colIndex={colIndex}
                     piece={piece || null}
@@ -133,6 +152,8 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
                     isFocused={focusedCell.row === uiRow && focusedCell.column === uiCol}
                     onCellClick={onCellClick || (() => {})}
                     onPieceClick={onPieceClick}
+                    onKeyDown={handleKeyDown}
+                    onFocus={setFocusedCell}
                   />
                 );
               })}
