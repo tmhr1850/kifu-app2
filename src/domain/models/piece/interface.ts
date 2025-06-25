@@ -1,4 +1,4 @@
-import { PieceType, Player, Position, Move } from './types';
+import { PieceType, Player, Position, PieceMove } from './types';
 
 /**
  * 駒のインターフェース
@@ -102,8 +102,8 @@ export interface IBoard {
 
   /**
    * 指定された手を適用した新しい盤面を返す
-   * @param move 適用する手
+   * @param move 適用する手（通常の駒移動のみ）
    * @returns 手が適用された新しい盤面
    */
-  applyMove(move: Move): IBoard;
+  applyMove(move: PieceMove): IBoard;
 }

@@ -1,5 +1,5 @@
 import { IBoard } from '@/domain/models/piece/interface';
-import { Player, Move, PieceType } from '@/domain/models/piece/types';
+import { Player, Move, PieceMove, PieceType } from '@/domain/models/piece/types';
 import { IAIEngine } from '@/domain/services/ai-engine';
 import { GameRules } from '@/domain/services/game-rules';
 
@@ -70,15 +70,20 @@ export class SimpleAI implements IAIEngine {
     return 1;
   }
 
+  // 型ガード関数
+  private isPieceMove(move: Move): move is PieceMove {
+    return 'from' in move;
+  }
+
   /**
-   * 手を評価する
+   * 手を評価する（通常の駒移動のみ）
    * @param board - 現在の盤面
    * @param move - 評価する手
    * @param player - プレイヤー
    * @param depth - 探索深度
    * @returns 評価値
    */
-  private async evaluateMove(board: IBoard, move: Move, player: Player, depth: number): Promise<number> {
+  private async evaluateMove(board: IBoard, move: PieceMove, player: Player, depth: number): Promise<number> {
     const newBoard = board.applyMove(move);
     
     // 詰みの判定

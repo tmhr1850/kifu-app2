@@ -1,5 +1,5 @@
 import { IBoard, IPiece } from '../models/piece/interface';
-import { Player, Position, Move, PieceType } from '../models/piece/types';
+import { Player, Position, PieceMove, PieceType } from '../models/piece/types';
 
 /**
  * ゲームのルールを管理するクラス
@@ -16,10 +16,10 @@ export class GameRules {
    * 指定されたプレイヤーの全ての合法手を生成する
    * @param board - 現在の盤面
    * @param player - 手番のプレイヤー
-   * @returns 合法手の配列
+   * @returns 合法手の配列（通常の駒移動のみ）
    */
-  public generateLegalMoves(board: IBoard, player: Player): Move[] {
-    const legalMoves: Move[] = [];
+  public generateLegalMoves(board: IBoard, player: Player): PieceMove[] {
+    const legalMoves: PieceMove[] = [];
     const pieces = board.getPieces(player);
 
     for (const piece of pieces) {
@@ -43,7 +43,7 @@ export class GameRules {
         }
 
         for (const isPromotion of promotionMoves) {
-          const move: Move = { from, to, isPromotion };
+          const move: PieceMove = { from, to, isPromotion };
           const testBoard = board.applyMove(move);
           if (!this.isInCheck(testBoard, player)) {
             legalMoves.push(move);

@@ -1,7 +1,7 @@
 import { InvalidMoveError } from '../../errors/invalid-move-error';
 import { createPiece } from '../piece/factory';
 import { IBoard, IPiece } from '../piece/interface';
-import { Move, PieceType, Player, Position } from '../piece/types';
+import { PieceMove, PieceType, Player, Position } from '../piece/types';
 import { Position as PositionClass } from '../position';
 
 /**
@@ -126,10 +126,10 @@ export class Board implements IBoard {
 
   /**
    * 指定された手を適用した新しい盤面を返す（非破壊）
-   * @param move 適用する手
+   * @param move 適用する手（通常の駒移動のみ）
    * @returns 手が適用された新しい盤面
    */
-  public applyMove(move: Move): IBoard {
+  public applyMove(move: PieceMove): IBoard {
     const newBoard = this.clone() as Board;
     const originalPiece = newBoard.getPiece(move.from);
 
