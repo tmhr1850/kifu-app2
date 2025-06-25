@@ -14,6 +14,16 @@ import {
   UIPosition
 } from './types'
 
+// シリアライズされたゲームデータの型定義
+interface SerializedPiece {
+  type: PieceType;
+  player: Player;
+}
+
+interface SerializedBoard {
+  squares: (SerializedPiece | null)[][];
+}
+
 export class GameUseCase implements IGameUseCase {
   private gameState!: GameState
   private gameRules: GameRules
@@ -410,13 +420,13 @@ export class GameUseCase implements IGameUseCase {
     const board = new Board()
     
     // 保存された盤面データからBoardを復元
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (savedState.board && (savedState.board as any).squares) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const squares = (savedState.board as any).squares
+    if (savedState.board && 'squares' in savedState.board) {
+      const serializedBoard = savedState.board as unknown as SerializedBoard
+      const squares = serializedBoard.squares
+      
       for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
-          const piece = squares[row][col]
+          const piece = squares[row]?.[col]
           if (piece && piece.type && piece.player) {
             const pos = new Position(row, col)
             const newPiece = createPiece(piece.type, piece.player)
