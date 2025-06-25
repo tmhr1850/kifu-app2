@@ -14,6 +14,16 @@ import {
   UIPosition
 } from './types'
 
+// シリアライズされたゲームデータの型定義
+interface SerializedPiece {
+  type: PieceType;
+  player: Player;
+}
+
+interface SerializedBoard {
+  squares: (SerializedPiece | null)[][];
+}
+
 export class GameUseCase implements IGameUseCase {
   private gameState!: GameState
   private gameRules: GameRules
@@ -402,6 +412,41 @@ export class GameUseCase implements IGameUseCase {
         return PieceType.ROOK
       default:
         return type // 元から成り駒でなければそのまま返す
+    }
+  }
+
+  loadGameState(savedState: GameState): void {
+    // Boardインスタンスを再構築
+    const board = new Board()
+    
+    // 保存された盤面データからBoardを復元
+    if (savedState.board && 'squares' in savedState.board) {
+      const serializedBoard = savedState.board as unknown as SerializedBoard
+      const squares = serializedBoard.squares
+      
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          const piece = squares[row]?.[col]
+          if (piece && piece.type && piece.player) {
+            const pos = new Position(row, col)
+            const newPiece = createPiece(piece.type, piece.player)
+            board.setPiece(pos, newPiece)
+          }
+        }
+      }
+    }
+    
+    // 持ち駒を復元（capturedPiecesをそのまま使用）
+    const capturedPieces = {
+      sente: savedState.capturedPieces?.sente?.map(p => createPiece(p.type, Player.SENTE)) || [],
+      gote: savedState.capturedPieces?.gote?.map(p => createPiece(p.type, Player.GOTE)) || []
+    }
+    
+    // ゲーム状態を更新
+    this.gameState = {
+      ...savedState,
+      board: board,
+      capturedPieces: capturedPieces
     }
   }
 }
