@@ -191,43 +191,43 @@ describe('BoardUI', () => {
   describe('異なるサイズの盤面での境界値テスト', () => {
     it('3x3盤面の左上端でArrowUpとArrowLeftが効かない', () => {
       render(<BoardUI size={3} />);
-      const topLeftCell = screen.getByTestId('cell-0-2'); // 1行1列目
+      const topLeftCell = screen.getByTestId('cell-0-2'); // 1行1列目（UI座標系で1,1）
       topLeftCell.focus();
 
-      // 上矢印キーが効かない
+      // 上矢印キーが効かない（すでに一番上）
       fireEvent.keyDown(topLeftCell, { key: 'ArrowUp' });
       expect(topLeftCell).toHaveFocus();
 
-      // 左矢印キー（UI座標系では右端）が効かない
-      fireEvent.keyDown(topLeftCell, { key: 'ArrowLeft' });
+      // 右矢印キー（UI座標系で左端）が効かない
+      fireEvent.keyDown(topLeftCell, { key: 'ArrowRight' });
       expect(topLeftCell).toHaveFocus();
     });
 
-    it('3x3盤面の右下端でArrowDownとArrowRightが効かない', () => {
+    it('3x3盤面の右下端でArrowDownとArrowLeftが効かない', () => {
       render(<BoardUI size={3} />);
-      const bottomRightCell = screen.getByTestId('cell-2-0'); // 3行3列目
+      const bottomRightCell = screen.getByTestId('cell-2-0'); // 3行3列目（UI座標系で3,3）
       bottomRightCell.focus();
 
-      // 下矢印キーが効かない
+      // 下矢印キーが効かない（すでに一番下）
       fireEvent.keyDown(bottomRightCell, { key: 'ArrowDown' });
       expect(bottomRightCell).toHaveFocus();
 
-      // 右矢印キー（UI座標系では左端）が効かない
-      fireEvent.keyDown(bottomRightCell, { key: 'ArrowRight' });
+      // 左矢印キー（UI座標系で右端）が効かない
+      fireEvent.keyDown(bottomRightCell, { key: 'ArrowLeft' });
       expect(bottomRightCell).toHaveFocus();
     });
 
     it('5x5盤面でのキーボード移動が正しく動作する', () => {
       render(<BoardUI size={5} />);
-      const centerCell = screen.getByTestId('cell-2-2'); // 中央のマス
+      const centerCell = screen.getByTestId('cell-2-2'); // 中央のマス（UI座標系で3,3）
       centerCell.focus();
 
-      // 上に移動
+      // 上に移動（UI座標系で row: 3 -> 2）
       fireEvent.keyDown(centerCell, { key: 'ArrowUp' });
       expect(screen.getByTestId('cell-1-2')).toHaveFocus();
 
-      // 左に移動（UI座標系では列番号が増える）
-      fireEvent.keyDown(screen.getByTestId('cell-1-2'), { key: 'ArrowLeft' });
+      // 右に移動（UI座標系では列番号が減る: column: 3 -> 2）
+      fireEvent.keyDown(screen.getByTestId('cell-1-2'), { key: 'ArrowRight' });
       expect(screen.getByTestId('cell-1-3')).toHaveFocus();
     });
 

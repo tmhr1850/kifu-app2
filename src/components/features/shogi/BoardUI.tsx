@@ -38,7 +38,7 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
     const rowIndex = focusedCell.row - 1;
     const colIndex = size - focusedCell.column;
     cellRefs.current[rowIndex]?.[colIndex]?.focus();
-  }, [focusedCell]);
+  }, [focusedCell, size]);
 
   // 駒の位置をマップに変換して高速検索可能にする
   const piecesMap = useMemo(() => {
@@ -103,7 +103,7 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
     }
     setFocusedCell(newPosition);
 
-  }, [piecesMap, onCellClick, onPieceClick]);
+  }, [piecesMap, onCellClick, onPieceClick, size]);
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
