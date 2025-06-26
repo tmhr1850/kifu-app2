@@ -243,6 +243,10 @@ export class GameManager implements IGameManager {
     return this.state
   }
 
+  getUIBoardState() {
+    return this.gameUseCase.getUIBoardState()
+  }
+
   getBoardPiecesWithUIPositions() {
     return this.gameUseCase.getBoardPiecesWithUIPositions()
   }

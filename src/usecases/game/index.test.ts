@@ -84,6 +84,76 @@ describe('GameUseCase', () => {
     })
   })
 
+  describe('getUIBoardState', () => {
+    it('初期状態で正しい駒配置を返す', () => {
+      const uiBoardState = gameUseCase.getUIBoardState()
+      
+      // 初期状態で40個の駒があることを確認
+      expect(uiBoardState).toHaveLength(40)
+      
+      // 先手の王が正しい位置にあることを確認
+      const senteKing = uiBoardState.find(
+        item => item.piece.type === PieceType.KING && item.piece.player === Player.SENTE
+      )
+      expect(senteKing).toBeDefined()
+      expect(senteKing?.position).toEqual({ row: 9, column: 5 })
+      
+      // 後手の王が正しい位置にあることを確認
+      const goteKing = uiBoardState.find(
+        item => item.piece.type === PieceType.KING && item.piece.player === Player.GOTE
+      )
+      expect(goteKing).toBeDefined()
+      expect(goteKing?.position).toEqual({ row: 1, column: 5 })
+    })
+
+    it('駒移動後に正しく状態が更新される', () => {
+      // 初期状態
+      const initialState = gameUseCase.getUIBoardState()
+      const initialPawnCount = initialState.filter(
+        item => item.piece.type === PieceType.PAWN
+      ).length
+      
+      // 歩を移動
+      gameUseCase.movePiece({ row: 7, column: 7 }, { row: 6, column: 7 })
+      
+      // 移動後の状態
+      const afterMoveState = gameUseCase.getUIBoardState()
+      const afterMovePawnCount = afterMoveState.filter(
+        item => item.piece.type === PieceType.PAWN
+      ).length
+      
+      // 駒の総数は変わらない
+      expect(afterMoveState).toHaveLength(40)
+      expect(afterMovePawnCount).toBe(initialPawnCount)
+      
+      // 移動した歩が新しい位置にある
+      const movedPawn = afterMoveState.find(
+        item => item.piece.type === PieceType.PAWN && 
+                item.piece.player === Player.SENTE &&
+                item.position.row === 6 && 
+                item.position.column === 7
+      )
+      expect(movedPawn).toBeDefined()
+    })
+
+    it('キャッシュが正しく動作する', () => {
+      // 同じ盤面状態で複数回呼び出し
+      const state1 = gameUseCase.getUIBoardState()
+      const state2 = gameUseCase.getUIBoardState()
+      
+      // 参照が同じであることを確認（キャッシュが効いている）
+      expect(state1).toBe(state2)
+      
+      // 駒を移動してキャッシュを無効化
+      gameUseCase.movePiece({ row: 7, column: 7 }, { row: 6, column: 7 })
+      const state3 = gameUseCase.getUIBoardState()
+      
+      // 新しい状態が返される（キャッシュが無効化されている）
+      expect(state1).not.toBe(state3)
+      expect(state3).toHaveLength(40)
+    })
+  })
+
   describe('turnManagement', () => {
     it('手番が正しく管理される', () => {
       expect(gameUseCase.getGameState().currentPlayer).toBe(Player.SENTE)

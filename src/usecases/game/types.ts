@@ -48,7 +48,8 @@ export interface IGameUseCase {
   movePiece(from: UIPosition, to: UIPosition, isPromotion?: boolean): MoveResult
   dropPiece(pieceType: PieceType, to: UIPosition): MoveResult
   getGameState(): GameState
-  getBoardPiecesWithUIPositions(): { piece: IPiece; position: UIPosition }[]
+  getUIBoardState(): { piece: IPiece; position: UIPosition }[]
+  getBoardPiecesWithUIPositions(): { piece: IPiece; position: UIPosition }[] // 後方互換性のため
   getBoardPieces(): { piece: IPiece; position: UIPosition }[] // 後方互換性のため
   getLegalMoves(from?: UIPosition): UIPosition[]
   canPromote(from: UIPosition, to: UIPosition): boolean
