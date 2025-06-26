@@ -6,8 +6,8 @@ import { CapturedPiecesUI } from '@/components/ui/CapturedPiecesUI';
 import { CapturedPiece } from '@/components/ui/types';
 import { IPiece } from '@/domain/models/piece/interface';
 import { Player, PieceType } from '@/domain/models/piece/types';
+import { useGameManager } from '@/hooks/useGameManager';
 import { UIPosition } from '@/types/common';
-import { GameManager } from '@/usecases/gamemanager';
 
 import { BoardUI } from './BoardUI';
 import { PromotionDialog } from './PromotionDialog';
@@ -18,8 +18,9 @@ interface PendingMove {
   to: UIPosition;
 }
 
-export const GameScreen: React.FC = () => {
-  const [gameManager] = useState(() => new GameManager());
+export const GameScreen: React.FC = React.memo(function GameScreen() {
+  const { getGameManager } = useGameManager();
+  const gameManager = getGameManager();
   const [managerState, setManagerState] = useState(gameManager.getState());
   const gameState = managerState.gameState;
   const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);
@@ -391,4 +392,4 @@ export const GameScreen: React.FC = () => {
       )}
     </div>
   );
-};
+});

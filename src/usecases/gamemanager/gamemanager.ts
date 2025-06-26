@@ -2,6 +2,7 @@ import { Player, PieceType, Move, DropMove } from '@/domain/models/piece/types'
 import { IAIEngine } from '@/domain/services/ai-engine'
 import { UIPosition } from '@/types/common'
 import { SimpleAI } from '@/usecases/ai/simple-ai'
+import { WebWorkerAI } from '@/usecases/ai/web-worker-ai'
 import { GameUseCase } from '@/usecases/game/usecase'
 
 import { 
@@ -65,7 +66,8 @@ export class GameManager implements IGameManager {
 
   constructor(aiEngine?: IAIEngine) {
     this.gameUseCase = new GameUseCase()
-    this.aiEngine = aiEngine || new SimpleAI()
+    // ブラウザ環境ではWebWorkerAI、サーバー環境ではSimpleAIを使用
+    this.aiEngine = aiEngine || (typeof window !== 'undefined' ? new WebWorkerAI() : new SimpleAI())
     
     const initialGameState = this.gameUseCase.startNewGame()
     this.state = {
@@ -319,6 +321,16 @@ export class GameManager implements IGameManager {
 
   clearSavedGame(): void {
     localStorage.removeItem(STORAGE_KEY)
+  }
+
+  /**
+   * GameManagerのリソースをクリーンアップ
+   * WebWorkerAIのリソースも含めて適切に解放
+   */
+  dispose(): void {
+    if (this.aiEngine && 'dispose' in this.aiEngine && typeof this.aiEngine.dispose === 'function') {
+      this.aiEngine.dispose()
+    }
   }
 
   private async executeAIMove(): Promise<void> {

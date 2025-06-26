@@ -201,4 +201,59 @@ export class Board implements IBoard {
     
     return board;
   }
+
+  /**
+   * 盤面状態をシリアライズする（Web Worker通信用）
+   * @returns シリアライズされた盤面データ
+   */
+  public serialize(): unknown {
+    return {
+      type: 'Board',
+      squares: this.squares.map(row => 
+        row.map(piece => piece ? {
+          type: piece.type,
+          player: piece.player,
+          position: piece.position ? {
+            row: piece.position.row,
+            column: piece.position.column
+          } : null
+        } : null)
+      )
+    };
+  }
+
+  /**
+   * シリアライズされたデータから盤面を復元する（Web Worker通信用）
+   * @param data シリアライズされた盤面データ
+   * @returns 復元されたBoardインスタンス
+   */
+  public static deserialize(data: unknown): Board {
+    if (!data || typeof data !== 'object' || !('type' in data) || data.type !== 'Board') {
+      throw new Error('Invalid serialized board data');
+    }
+    
+    const boardData = data as { 
+      type: string; 
+      squares: Array<Array<{
+        type: PieceType;
+        player: Player;
+        position: { row: number; column: number } | null;
+      } | null>>
+    };
+    
+    const board = new Board();
+    
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        const pieceData = boardData.squares[row]?.[col];
+        if (pieceData) {
+          const position = new PositionClass(row, col);
+          const piece = createPiece(pieceData.type, pieceData.player, position);
+          board.setPiece(position, piece);
+        }
+      }
+    }
+    
+    return board;
+  }
 } 
