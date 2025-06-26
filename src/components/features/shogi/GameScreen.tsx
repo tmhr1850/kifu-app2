@@ -22,6 +22,12 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
   const { getGameManager } = useGameManager();
   const gameManager = getGameManager();
   const [managerState, setManagerState] = useState(gameManager.getState());
+
+  useEffect(() => {
+    const unsubscribe = gameManager.subscribe(setManagerState);
+    return () => unsubscribe();
+  }, [gameManager]);
+
   const gameState = managerState.gameState;
   const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);
   const [selectedCapturedPiece, setSelectedCapturedPiece] = useState<PieceType | null>(null);
@@ -86,7 +92,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       pieceCount.set(piece.type, (pieceCount.get(piece.type) || 0) + 1);
     }
     return Array.from(pieceCount.entries()).map(([type, count]) => ({ type, count }));
-  }, [gameState]);
+  }, [managerState]);
 
   const capturedGote = useMemo((): CapturedPiece[] => {
     if (!gameState) return [];
@@ -95,13 +101,13 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       pieceCount.set(piece.type, (pieceCount.get(piece.type) || 0) + 1);
     }
     return Array.from(pieceCount.entries()).map(([type, count]) => ({ type, count }));
-  }, [gameState]);
+  }, [managerState]);
 
   // 盤面の駒を配列に変換（GameUseCaseと同じ座標変換を使用）
   const boardPieces = useMemo(() => {
     if (!gameState) return [];
     return gameManager.getBoardPieces();
-  }, [gameState, gameManager]);
+  }, [managerState, gameManager]);
 
   // セルがクリックされた時の処理
   const handleCellClick = useCallback(async (position: UIPosition) => {

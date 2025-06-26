@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { GameScreen } from './GameScreen';
@@ -104,6 +104,53 @@ describe('GameScreen', () => {
 
     // 後手の持ち駒エリア
     expect(screen.getByTestId('captured-pieces-gote')).toBeInTheDocument();
+  });
+
+  it('盤上の駒が正しく表示される', () => {
+    render(<GameScreen />);
+    // モックで設定した駒が表示されているか確認
+    expect(screen.getByLabelText(/先手の王/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/先手の歩/)).toHaveLength(2);
+    expect(screen.getByLabelText(/後手の王/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/後手の歩/)).toBeInTheDocument();
+  });
+
+  it('持ち駒が正しく表示される', async () => {
+    const { GameManager } = await import('@/usecases/gamemanager');
+    const mockGameManager = new GameManager();
+    // 持ち駒がある状態をモック
+    mockGameManager.getState.mockReturnValue({
+      gameState: {
+        board: {
+          getPiece: vi.fn(() => null),
+        },
+        currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: {
+          sente: [{ type: 'PAWN', player: 'SENTE' }],
+          gote: [{ type: 'ROOK', player: 'GOTE' }],
+        },
+        status: 'playing',
+        isCheck: false,
+      },
+      isAIThinking: false,
+      playerColor: 'SENTE',
+      aiColor: 'GOTE',
+    });
+
+    render(<GameScreen />);
+
+    // 先手の持ち駒に歩があるか
+    await waitFor(() => {
+      const senteArea = screen.getByTestId('captured-pieces-sente');
+      expect(within(senteArea).getByLabelText(/歩/)).toBeInTheDocument();
+    });
+
+    // 後手の持ち駒に飛車があるか
+    await waitFor(() => {
+      const goteArea = screen.getByTestId('captured-pieces-gote');
+      expect(within(goteArea).getByLabelText(/飛車/)).toBeInTheDocument();
+    });
   });
 
   it.skip('駒をクリックすると移動可能なマスがハイライトされる', async () => {

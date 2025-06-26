@@ -63,6 +63,7 @@ export class GameManager implements IGameManager {
   private state: GameManagerState
   private config: Required<GameManagerConfig>
   private saveGameDebounced: () => void
+  private subscribers: ((state: GameManagerState) => void)[] = []
 
   constructor(aiEngine?: IAIEngine) {
     this.gameUseCase = new GameUseCase()
@@ -90,6 +91,25 @@ export class GameManager implements IGameManager {
     }, AUTO_SAVE_DEBOUNCE_DELAY)
   }
 
+  // 状態変更を通知するメソッド
+  private notify(): void {
+    this.subscribers.forEach(callback => callback(this.state))
+  }
+
+  // 状態変更を購読するメソッド
+  subscribe(callback: (state: GameManagerState) => void): () => void {
+    this.subscribers.push(callback)
+    return () => {
+      this.subscribers = this.subscribers.filter(cb => cb !== callback)
+    }
+  }
+
+  // 状態を更新するたびに notify() を呼ぶように変更
+  private setState(newState: Partial<GameManagerState>): void {
+    this.state = { ...this.state, ...newState }
+    this.notify()
+  }
+
   async startNewGame(config?: GameManagerConfig): Promise<GameManagerState> {
     this.config = {
       ...this.config,
@@ -97,13 +117,13 @@ export class GameManager implements IGameManager {
     }
     
     const gameState = this.gameUseCase.startNewGame()
-    this.state = {
+    this.setState({
       gameState,
       isAIThinking: false,
       playerColor: this.config.playerColor,
       aiColor: this.config.playerColor === Player.SENTE ? Player.GOTE : Player.SENTE,
       error: undefined
-    }
+    })
     
     if (this.config.enableAutoSave) {
       await this.saveGame()
@@ -149,11 +169,10 @@ export class GameManager implements IGameManager {
     
     if (result.success && result.gameState) {
       // console.log('✅ 駒移動成功！新しい手番:', result.gameState.currentPlayer);
-      this.state = {
-        ...this.state,
+      this.setState({
         gameState: result.gameState,
         error: undefined
-      }
+      })
       
       if (this.config.enableAutoSave) {
         this.saveGameDebounced()
@@ -166,10 +185,9 @@ export class GameManager implements IGameManager {
       }
     } else {
       // console.log('❌ 駒移動失敗:', result.error?.message);
-      this.state = {
-        ...this.state,
+      this.setState({
         error: result.error
-      }
+      })
     }
     
     return this.state
@@ -202,11 +220,10 @@ export class GameManager implements IGameManager {
     const result = this.gameUseCase.dropPiece(pieceType, to)
     
     if (result.success && result.gameState) {
-      this.state = {
-        ...this.state,
+      this.setState({
         gameState: result.gameState,
         error: undefined
-      }
+      })
       
       if (this.config.enableAutoSave) {
         this.saveGameDebounced()
@@ -217,10 +234,9 @@ export class GameManager implements IGameManager {
         await this.executeAIMove()
       }
     } else {
-      this.state = {
-        ...this.state,
+      this.setState({
         error: result.error
-      }
+      })
     }
     
     return this.state
@@ -228,11 +244,10 @@ export class GameManager implements IGameManager {
 
   async resign(player: Player): Promise<GameManagerState> {
     this.gameUseCase.resign(player)
-    this.state = {
-      ...this.state,
+    this.setState({
       gameState: this.gameUseCase.getGameState(),
       error: undefined
-    }
+    })
     
     if (this.config.enableAutoSave) {
       await this.saveGame()
@@ -284,13 +299,13 @@ export class GameManager implements IGameManager {
       // 保存されたゲーム状態を復元
       this.gameUseCase.loadGameState(saved.gameState)
       
-      this.state = {
+      this.setState({
         gameState: this.gameUseCase.getGameState(),
         isAIThinking: false,
         playerColor: saved.playerColor,
         aiColor: saved.playerColor === Player.SENTE ? Player.GOTE : Player.SENTE,
         error: undefined
-      }
+      })
       
       // AIの手番の場合、AIの手を実行
       if (this.state.gameState.currentPlayer === this.state.aiColor &&
@@ -334,10 +349,7 @@ export class GameManager implements IGameManager {
   }
 
   private async executeAIMove(): Promise<void> {
-    this.state = {
-      ...this.state,
-      isAIThinking: true
-    }
+    this.setState({ isAIThinking: true })
     
     try {
       // Boardインスタンスを取得
@@ -359,12 +371,11 @@ export class GameManager implements IGameManager {
         }
         const result = this.gameUseCase.dropPiece(move.drop, toUI)
         if (result.success && result.gameState) {
-          this.state = {
-            ...this.state,
+          this.setState({
             gameState: result.gameState,
             isAIThinking: false,
             error: undefined
-          }
+          })
         }
       } else if (move.from && move.to) {
         // Position (0-based) を UIPosition (1-based) に変換
@@ -382,12 +393,11 @@ export class GameManager implements IGameManager {
           move.isPromotion
         )
         if (result.success && result.gameState) {
-          this.state = {
-            ...this.state,
+          this.setState({
             gameState: result.gameState,
             isAIThinking: false,
             error: undefined
-          }
+          })
         }
       }
       
@@ -396,11 +406,10 @@ export class GameManager implements IGameManager {
       }
     } catch (error) {
       Logger.error('AI move failed', error)
-      this.state = {
-        ...this.state,
+      this.setState({
         isAIThinking: false,
         error: error instanceof Error ? error : new Error('AI思考中にエラーが発生しました')
-      }
+      })
     }
   }
 }
