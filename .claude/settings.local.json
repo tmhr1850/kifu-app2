@@ -28,6 +28,8 @@
       "Bash(timeout 90 npm run build)",
       "Bash(git checkout:*)",
       "Bash(gh run list:*)",
+      "Bash(git restore:*)",
+      "Bash(rm:*)",
       "Bash(npm run test:*)"
     ],
     "deny": []

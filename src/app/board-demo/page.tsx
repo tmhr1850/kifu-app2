@@ -49,6 +49,16 @@ export default function BoardDemoPage() {
           <p>その周囲のマスが移動可能マス（緑）として表示されます。</p>
         </div>
         
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+          <h3 className="font-semibold text-blue-900 mb-2">🎮 キーボード操作ガイド</h3>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>↑↓←→ : 矢印キーで盤面を移動</li>
+            <li>Enter / Space : 選択したマスをクリック</li>
+            <li>Tab : フォーカスされたセルに移動</li>
+          </ul>
+          <p className="text-xs text-blue-600 mt-2">※ 紫色の枠線がフォーカス位置を示します</p>
+        </div>
+        
         <BoardUI
           selectedCell={selectedCell}
           highlightedCells={highlightedCells}

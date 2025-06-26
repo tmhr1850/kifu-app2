@@ -66,7 +66,8 @@ const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
           'bg-blue-500': isSelected,
           'bg-green-500': isHighlighted && !isSelected,
           'bg-amber-50': !isSelected && !isHighlighted,
-          // 'ring-2 ring-purple-500 ring-inset': isFocused // focus擬似クラスに統合したためコメントアウト
+          'ring-2 ring-purple-500 ring-inset': isFocused,
+          'animate-pulse': isFocused && !isSelected && !isHighlighted
         }
       )}
       role="gridcell"
