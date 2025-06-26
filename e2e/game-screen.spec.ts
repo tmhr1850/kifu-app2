@@ -13,7 +13,7 @@ test.describe('GameScreen E2E Tests', () => {
     await expect(page.getByText('先手番')).toBeVisible();
 
     // 将棋盤
-    await expect(page.getByRole('grid')).toBeVisible();
+    await expect(page.getByRole('grid', { name: '将棋盤' })).toBeVisible();
 
     // 持ち駒エリア
     await expect(page.getByTestId('captured-pieces-sente')).toBeVisible();
@@ -75,6 +75,6 @@ test.describe('GameScreen E2E Tests', () => {
     // ここでは基本的な流れのテストのみ
     
     // 将棋盤が表示されていることを確認
-    await expect(page.getByRole('grid')).toBeVisible();
+    await expect(page.getByRole('grid', { name: '将棋盤' })).toBeVisible();
   });
 });
