@@ -39,6 +39,7 @@ vi.mock('@/usecases/gamemanager', () => {
     loadGame: vi.fn().mockResolvedValue(null),
     movePiece: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
     dropPiece: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
+    getBoardPieces: vi.fn(() => []),
     getLegalMoves: vi.fn(() => []),
     canPromote: vi.fn(() => false),
     resign: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
