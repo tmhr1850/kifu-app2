@@ -30,7 +30,8 @@ export interface IGameManager {
   dropPiece(pieceType: PieceType, to: UIPosition): Promise<GameManagerState>
   resign(player: Player): Promise<GameManagerState>
   getState(): GameManagerState
-  getBoardPieces(): { piece: IPiece; position: UIPosition }[]
+  getBoardPiecesWithUIPositions(): { piece: IPiece; position: UIPosition }[]
+  getBoardPieces(): { piece: IPiece; position: UIPosition }[] // 後方互換性のため
   getLegalMoves(from?: UIPosition): UIPosition[]
   getLegalDropPositions(pieceType: PieceType): UIPosition[]
   canPromote(from: UIPosition, to: UIPosition): boolean

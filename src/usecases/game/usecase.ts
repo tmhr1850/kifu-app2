@@ -27,6 +27,10 @@ interface SerializedBoard {
 export class GameUseCase implements IGameUseCase {
   private gameState!: GameState
   private gameRules: GameRules
+  
+  // boardPiecesのキャッシュ用
+  private boardPiecesCache: { piece: IPiece; position: UIPosition }[] | null = null
+  private lastBoardSnapshot: string | null = null
 
   constructor() {
     this.gameRules = new GameRules()
@@ -46,6 +50,16 @@ export class GameUseCase implements IGameUseCase {
       status: 'playing',
       isCheck: false
     }
+    this._clearBoardPiecesCache()
+  }
+
+  /**
+   * boardPiecesのキャッシュを無効化
+   * @private
+   */
+  private _clearBoardPiecesCache(): void {
+    this.boardPiecesCache = null
+    this.lastBoardSnapshot = null
   }
 
   // UIとドメインの座標変換
@@ -193,6 +207,7 @@ export class GameUseCase implements IGameUseCase {
     }
     
     this.gameState = this.updateGameStatus(newGameState)
+    this._clearBoardPiecesCache() // 盤面変更時にキャッシュクリア
 
     return {
       success: true,
@@ -265,6 +280,7 @@ export class GameUseCase implements IGameUseCase {
     }
 
     this.gameState = this.updateGameStatus(newGameState)
+    this._clearBoardPiecesCache() // 盤面変更時にキャッシュクリア
 
     return {
       success: true,
@@ -276,11 +292,29 @@ export class GameUseCase implements IGameUseCase {
     return this.gameState
   }
 
-  getBoardPieces(): { piece: IPiece; position: UIPosition }[] {
+  /**
+   * 盤面上の全ての駒をUI座標付きで取得
+   * @returns 駒とUI座標のペアの配列
+   * @description 
+   * - 9x9の全マスをスキャンして駒を検索
+   * - ドメイン座標(0-8)からUI座標(1-9)に自動変換
+   * - 空のマスはスキップして駒のみを返却
+   * - パフォーマンス最適化：盤面が変更されない限りキャッシュを使用
+   */
+  getBoardPiecesWithUIPositions(): { piece: IPiece; position: UIPosition }[] {
     if (!this.gameState) {
       return []
     }
 
+    // 盤面のスナップショットを作成（簡易的なハッシュ）
+    const currentBoardSnapshot = JSON.stringify(this.gameState.board)
+    
+    // キャッシュが有効かチェック
+    if (this.boardPiecesCache && this.lastBoardSnapshot === currentBoardSnapshot) {
+      return this.boardPiecesCache
+    }
+
+    // キャッシュが無効な場合は再計算
     const pieces: { piece: IPiece; position: UIPosition }[] = []
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
@@ -291,7 +325,21 @@ export class GameUseCase implements IGameUseCase {
         }
       }
     }
+    
+    // キャッシュを更新
+    this.boardPiecesCache = pieces
+    this.lastBoardSnapshot = currentBoardSnapshot
+    
     return pieces
+  }
+
+  /**
+   * 盤面上の全ての駒をUI座標付きで取得（後方互換性のため）
+   * @deprecated getBoardPiecesWithUIPositions()を使用してください
+   * @returns 駒とUI座標のペアの配列
+   */
+  getBoardPieces(): { piece: IPiece; position: UIPosition }[] {
+    return this.getBoardPiecesWithUIPositions()
   }
 
   getLegalMoves(fromUI?: UIPosition): UIPosition[] {
@@ -489,5 +537,6 @@ export class GameUseCase implements IGameUseCase {
       board: board,
       capturedPieces: capturedPieces
     }
+    this._clearBoardPiecesCache() // ゲーム状態読み込み時にキャッシュクリア
   }
 }
