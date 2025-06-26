@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { BoardUI } from './BoardUI';
 import { clsx } from 'clsx';
+import React, { useState, useEffect, useMemo } from 'react';
 
 interface MobileBoardWrapperProps {
   children: React.ReactNode;

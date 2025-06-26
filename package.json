@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest",
-    "test:unit": "vitest",
+    "test": "vitest src",
+    "test:unit": "vitest src",
     "test:e2e": "playwright test"
   },
   "dependencies": {

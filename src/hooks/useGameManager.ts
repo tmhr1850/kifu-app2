@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { GameManager } from '@/usecases/gamemanager/gamemanager.optimized';
+
 import { IAIEngine } from '@/domain/services/ai-engine';
+import { GameManager } from '@/usecases/gamemanager/gamemanager';
 
 /**
  * GameManagerのライフサイクルを管理するカスタムフック

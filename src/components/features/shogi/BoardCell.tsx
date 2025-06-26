@@ -41,7 +41,7 @@ const arePiecesEqual = (prevPiece: IPiece | null, nextPiece: IPiece | null): boo
   return (
     prevPiece.type === nextPiece.type &&
     prevPiece.player === nextPiece.player &&
-    prevPiece.id === nextPiece.id
+    prevPiece.equals(nextPiece)
   );
 };
 

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
+
 import { Board } from '@/domain/models/board/board';
 import { IPiece } from '@/domain/models/piece/interface';
-import { Position } from '@/domain/models/position';
-import { Player } from '@/domain/models/position/types';
+import { Player } from '@/domain/models/piece/types';
+import { Position } from '@/domain/models/position/position';
 
 interface AIWorkerOptions {
   onMoveCalculated: (move: { from: Position; to: Position } | null) => void;
@@ -55,7 +56,7 @@ export function useAIWorker({ onMoveCalculated, onError }: AIWorkerOptions) {
 
     isCalculatingRef.current = true;
 
-    // Boardをシリアライズして送信
+    // Boardの状態をシリアライズして送信
     workerRef.current.postMessage({
       type: 'CALCULATE_MOVE',
       board: board.serialize(),

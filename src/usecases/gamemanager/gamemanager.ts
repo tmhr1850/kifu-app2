@@ -255,8 +255,7 @@ export class GameManager implements IGameManager {
     
     const result = this.gameUseCase.dropPiece(
       pieceType,
-      to,
-      this.state.playerColor
+      to
     )
     
     if (result.success && result.gameState) {
@@ -393,9 +392,10 @@ export class GameManager implements IGameManager {
       // AI思考時間のシミュレーション
       await new Promise(resolve => setTimeout(resolve, this.config.aiThinkingTime))
       
-      const move = await this.aiEngine.think(
-        this.state.gameState,
-        this.state.aiColor
+      const move = await this.aiEngine.selectMove(
+        this.state.gameState.board,
+        this.state.aiColor,
+        this.config.aiThinkingTime
       )
       
       if (!move || this.disposed) {
@@ -408,16 +408,29 @@ export class GameManager implements IGameManager {
       
       let result
       if (isDropMove(move)) {
+        // Position (0-based) を UIPosition (1-based) に変換
+        const toUI: UIPosition = { 
+          row: move.to.row + 1, 
+          column: move.to.column + 1 
+        }
         result = this.gameUseCase.dropPiece(
-          move.pieceType,
-          move.to,
-          this.state.aiColor
+          move.drop,
+          toUI
         )
       } else {
+        // Position (0-based) を UIPosition (1-based) に変換
+        const fromUI: UIPosition = { 
+          row: move.from.row + 1, 
+          column: move.from.column + 1 
+        }
+        const toUI: UIPosition = { 
+          row: move.to.row + 1, 
+          column: move.to.column + 1 
+        }
         result = this.gameUseCase.movePiece(
-          move.from,
-          move.to,
-          move.promote
+          fromUI,
+          toUI,
+          move.isPromotion
         )
       }
       

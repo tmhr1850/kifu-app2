@@ -1,12 +1,12 @@
 import { Board } from '@/domain/models/board/board';
 import { IPiece } from '@/domain/models/piece/interface';
-import { Position } from '@/domain/models/position';
-import { Player } from '@/domain/models/position/types';
+import { Player } from '@/domain/models/piece/types';
+import { Position } from '@/domain/models/position/position';
 import { GameRules } from '@/domain/services/game-rules';
 
 interface WorkerMessage {
   type: 'CALCULATE_MOVE';
-  board: any; // Serialized board state
+  board: unknown; // Serialized board state
   currentPlayer: Player;
   capturedPieces: { piece: IPiece; position: Position }[];
 }
@@ -23,9 +23,16 @@ const evaluationCache = new Map<string, number>();
 
 // 盤面を文字列化してキャッシュキーを生成
 function generateBoardKey(board: Board): string {
-  const pieces = board.getPieces();
-  return pieces
-    .map(({ piece, position }) => `${position.row},${position.column}:${piece.type}:${piece.player}`)
+  const sentePieces = board.getPieces(Player.SENTE);
+  const gotePieces = board.getPieces(Player.GOTE);
+  const allPieces = [...sentePieces, ...gotePieces];
+  
+  return allPieces
+    .map((piece) => {
+      const pos = piece.position;
+      return pos ? `${pos.row},${pos.column}:${piece.type}:${piece.player}` : '';
+    })
+    .filter(key => key !== '')
     .sort()
     .join('|');
 }
@@ -55,15 +62,21 @@ function evaluatePosition(board: Board, player: Player): number {
   // キャッシュチェック
   const cached = evaluationCache.get(boardKey);
   if (cached !== undefined) {
-    return player === 'SENTE' ? cached : -cached;
+    return player === Player.SENTE ? cached : -cached;
   }
 
   let score = 0;
-  const pieces = board.getPieces();
+  const sentePieces = board.getPieces(Player.SENTE);
+  const gotePieces = board.getPieces(Player.GOTE);
 
-  for (const { piece } of pieces) {
+  for (const piece of sentePieces) {
     const value = PIECE_VALUES[piece.type] || 0;
-    score += piece.player === 'SENTE' ? value : -value;
+    score += value;
+  }
+  
+  for (const piece of gotePieces) {
+    const value = PIECE_VALUES[piece.type] || 0;
+    score -= value;
   }
 
   // キャッシュに保存（サイズ制限付き）
@@ -72,7 +85,7 @@ function evaluatePosition(board: Board, player: Player): number {
   }
   evaluationCache.set(boardKey, score);
 
-  return player === 'SENTE' ? score : -score;
+  return player === Player.SENTE ? score : -score;
 }
 
 // Alpha-Beta枝刈り付きミニマックス
@@ -93,7 +106,7 @@ function minimax(
   }
 
   const gameRules = new GameRules();
-  const allMoves = gameRules.getAllValidMoves(board, currentPlayer, capturedPieces);
+  const allMoves = gameRules.generateLegalMoves(board, currentPlayer);
 
   if (allMoves.length === 0) {
     return maximizingPlayer ? -Infinity : Infinity;
@@ -103,19 +116,19 @@ function minimax(
     let maxEval = -Infinity;
     for (const move of allMoves) {
       try {
-        const newBoard = board.applyMove(move.from, move.to);
-        const eval = minimax(
+        const newBoard = board.applyMove(move) as Board;
+        const evaluation = minimax(
           newBoard,
           depth - 1,
           alpha,
           beta,
           false,
-          currentPlayer === 'SENTE' ? 'GOTE' : 'SENTE',
+          currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE,
           capturedPieces,
           nodesEvaluated
         );
-        maxEval = Math.max(maxEval, eval);
-        alpha = Math.max(alpha, eval);
+        maxEval = Math.max(maxEval, evaluation);
+        alpha = Math.max(alpha, evaluation);
         if (beta <= alpha) break; // Beta枝刈り
       } catch {
         continue;
@@ -126,19 +139,19 @@ function minimax(
     let minEval = Infinity;
     for (const move of allMoves) {
       try {
-        const newBoard = board.applyMove(move.from, move.to);
-        const eval = minimax(
+        const newBoard = board.applyMove(move) as Board;
+        const evaluation = minimax(
           newBoard,
           depth - 1,
           alpha,
           beta,
           true,
-          currentPlayer === 'SENTE' ? 'GOTE' : 'SENTE',
+          currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE,
           capturedPieces,
           nodesEvaluated
         );
-        minEval = Math.min(minEval, eval);
-        beta = Math.min(beta, eval);
+        minEval = Math.min(minEval, evaluation);
+        beta = Math.min(beta, evaluation);
         if (beta <= alpha) break; // Alpha枝刈り
       } catch {
         continue;
@@ -153,54 +166,66 @@ self.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
   const { type, board: serializedBoard, currentPlayer, capturedPieces } = event.data;
 
   if (type === 'CALCULATE_MOVE') {
-    const board = Board.deserialize(serializedBoard);
-    const gameRules = new GameRules();
-    const allMoves = gameRules.getAllValidMoves(board, currentPlayer, capturedPieces);
+    try {
+      const board = Board.deserialize(serializedBoard);
+      const gameRules = new GameRules();
+      const allMoves = gameRules.generateLegalMoves(board, currentPlayer);
 
-    if (allMoves.length === 0) {
+      if (allMoves.length === 0) {
+        const response: WorkerResponse = {
+          type: 'MOVE_CALCULATED',
+          move: null
+        };
+        self.postMessage(response);
+        return;
+      }
+
+      let bestMove = allMoves[0];
+      let bestScore = -Infinity;
+      const nodesEvaluated = { count: 0 };
+
+      // 各手を評価（深さ2で探索）
+      for (const move of allMoves) {
+        try {
+          const newBoard = board.applyMove(move) as Board;
+          const score = minimax(
+            newBoard,
+            2, // 探索深さ
+            -Infinity,
+            Infinity,
+            false,
+            currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE,
+            capturedPieces,
+            nodesEvaluated
+          );
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestMove = move;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      const response: WorkerResponse = {
+        type: 'MOVE_CALCULATED',
+        move: {
+          from: new Position(bestMove.from.row, bestMove.from.column),
+          to: new Position(bestMove.to.row, bestMove.to.column)
+        },
+        evaluationScore: bestScore,
+        nodesEvaluated: nodesEvaluated.count
+      };
+      
+      self.postMessage(response);
+    } catch (error) {
+      // デシリアライズエラーの場合はnullを返す
       const response: WorkerResponse = {
         type: 'MOVE_CALCULATED',
         move: null
       };
       self.postMessage(response);
-      return;
     }
-
-    let bestMove = allMoves[0];
-    let bestScore = -Infinity;
-    const nodesEvaluated = { count: 0 };
-
-    // 各手を評価（深さ2で探索）
-    for (const move of allMoves) {
-      try {
-        const newBoard = board.applyMove(move.from, move.to);
-        const score = minimax(
-          newBoard,
-          2, // 探索深さ
-          -Infinity,
-          Infinity,
-          false,
-          currentPlayer === 'SENTE' ? 'GOTE' : 'SENTE',
-          capturedPieces,
-          nodesEvaluated
-        );
-
-        if (score > bestScore) {
-          bestScore = score;
-          bestMove = move;
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    const response: WorkerResponse = {
-      type: 'MOVE_CALCULATED',
-      move: bestMove,
-      evaluationScore: bestScore,
-      nodesEvaluated: nodesEvaluated.count
-    };
-    
-    self.postMessage(response);
   }
 });

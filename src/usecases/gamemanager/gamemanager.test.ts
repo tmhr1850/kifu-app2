@@ -224,8 +224,11 @@ describe('GameManager', () => {
   })
   
   describe('clearSavedGame', () => {
-    it('保存されたゲームを削除できる', () => {
+    it('保存されたゲームを削除できる', async () => {
       gameManager.clearSavedGame()
+      
+      // AsyncStorageが非同期なので、次のイベントループまで待つ
+      await new Promise(resolve => setTimeout(resolve, 10))
       
       expect(localStorage.removeItem).toHaveBeenCalledWith('kifu-app-game-state')
     })

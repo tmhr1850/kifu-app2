@@ -6,9 +6,9 @@ import { CapturedPiecesUI } from '@/components/ui/CapturedPiecesUI';
 import { CapturedPiece } from '@/components/ui/types';
 import { IPiece } from '@/domain/models/piece/interface';
 import { Player, PieceType } from '@/domain/models/piece/types';
-import { UIPosition } from '@/types/common';
-import { useGameManager } from '@/hooks/useGameManager';
 import { useAIWorker } from '@/hooks/useAIWorker';
+import { useGameManager } from '@/hooks/useGameManager';
+import { UIPosition } from '@/types/common';
 
 import { BoardUI } from './BoardUI';
 import { PromotionDialog } from './PromotionDialog';
@@ -140,16 +140,34 @@ export const GameScreen: React.FC = () => {
 
   // 初期化とゲーム読み込み
   useEffect(() => {
+    let isCancelled = false;
+    
     const loadSavedGame = async () => {
-      const savedState = await gameManager.loadGame();
-      if (savedState) {
-        setManagerState(savedState);
-      } else {
-        const newState = await gameManager.startNewGame();
-        setManagerState(newState);
+      try {
+        const savedState = await gameManager.loadGame();
+        if (isCancelled) return;
+        
+        if (savedState) {
+          setManagerState(savedState);
+        } else {
+          const newState = await gameManager.startNewGame();
+          if (!isCancelled) {
+            setManagerState(newState);
+          }
+        }
+      } catch (error) {
+        // GameManagerがdisposeされている場合はエラーを無視
+        if (!isCancelled && error instanceof Error && !error.message.includes('disposed')) {
+          console.error('Failed to load saved game:', error);
+        }
       }
     };
+    
     loadSavedGame();
+    
+    return () => {
+      isCancelled = true;
+    };
   }, [gameManager]);
 
   // AIのターンを処理（Web Worker使用）
@@ -161,11 +179,7 @@ export const GameScreen: React.FC = () => {
     if (gameState.currentPlayer === managerState.aiColor && !managerState.isAIThinking) {
       const timer = setTimeout(() => {
         const board = gameState.board;
-        const capturedPieces = gameState.capturedPieces[managerState.aiColor].map(piece => ({
-          piece,
-          position: piece.position
-        }));
-        calculateAIMove(board, managerState.aiColor, capturedPieces);
+        calculateAIMove(board, managerState.aiColor, []);
       }, 500);
 
       return () => clearTimeout(timer);
@@ -182,12 +196,12 @@ export const GameScreen: React.FC = () => {
   // 持ち駒の集計（最適化版）
   const capturedSente = useMemo(
     () => gameState ? aggregateCapturedPieces(gameState.capturedPieces.sente) : [],
-    [gameState?.capturedPieces.sente]
+    [gameState]
   );
 
   const capturedGote = useMemo(
     () => gameState ? aggregateCapturedPieces(gameState.capturedPieces.gote) : [],
-    [gameState?.capturedPieces.gote]
+    [gameState]
   );
 
   // 盤面の駒配列（最適化版）
@@ -207,7 +221,7 @@ export const GameScreen: React.FC = () => {
     }
     
     return pieces;
-  }, [gameState?.board]);
+  }, [gameState]);
 
   // ハンドラー関数（メモ化）
   const handleCellClick = useCallback(async (position: UIPosition) => {
@@ -247,6 +261,7 @@ export const GameScreen: React.FC = () => {
   }, [gameState, gameManager, managerState.isAIThinking, uiState.selectedCell, showError]);
 
   const handlePieceClick = useCallback((piece: IPiece) => {
+    if (!piece.position) return;
     const position = { row: piece.position.row + 1, column: piece.position.column + 1 };
     handleCellClick(position);
   }, [handleCellClick]);
@@ -419,13 +434,12 @@ export const GameScreen: React.FC = () => {
       {/* 成り確認ダイアログ */}
       {uiState.pendingMove && (
         <PromotionDialog
-          onDecision={handlePromotionDecision}
-          pieceType={
-            boardPieces.find(p => 
-              p.position.row === uiState.pendingMove!.from.row && 
-              p.position.column === uiState.pendingMove!.from.column
-            )?.piece.type || PieceType.PAWN
-          }
+          onChoice={handlePromotionDecision}
+          onCancel={() => {
+            dispatch({ type: 'SET_PENDING_MOVE', move: null });
+            dispatch({ type: 'SELECT_CELL', cell: null });
+            dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: [] });
+          }}
         />
       )}
 

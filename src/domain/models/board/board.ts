@@ -158,6 +158,76 @@ export class Board implements IBoard {
     return newBoard;
   }
 
+  /**
+   * Boardをシリアライズしてプレーンオブジェクトに変換
+   * Web Workerでの送信用
+   */
+  public serialize(): unknown {
+    return {
+      type: 'Board',
+      squares: this.squares.map(row => 
+        row.map(piece => piece ? {
+          type: piece.type,
+          player: piece.player,
+          position: piece.position ? {
+            row: piece.position.row,
+            column: piece.position.column
+          } : null
+        } : null)
+      )
+    };
+  }
+
+  /**
+   * シリアライズされたデータからBoardインスタンスを復元
+   * Web Workerでの受信用
+   */
+  public static deserialize(data: unknown): Board {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid serialized board data');
+    }
+
+    const serializedData = data as { 
+      type?: string; 
+      squares?: unknown[][]; 
+    };
+
+    if (serializedData.type !== 'Board' || !Array.isArray(serializedData.squares)) {
+      throw new Error('Invalid board format');
+    }
+
+    const newSquares: (IPiece | null)[][] = [];
+    
+    for (let row = 0; row < Board.SIZE; row++) {
+      newSquares[row] = [];
+      for (let col = 0; col < Board.SIZE; col++) {
+        const pieceData = serializedData.squares[row]?.[col];
+        
+        if (pieceData && typeof pieceData === 'object') {
+          const pd = pieceData as {
+            type: PieceType;
+            player: Player;
+            position?: { row: number; column: number } | null;
+          };
+          
+          if (pd.type && pd.player) {
+            const position = pd.position ? 
+              new PositionClass(pd.position.row, pd.position.column) : 
+              new PositionClass(row, col);
+            const piece = createPiece(pd.type, pd.player, position);
+            newSquares[row][col] = piece;
+          } else {
+            newSquares[row][col] = null;
+          }
+        } else {
+          newSquares[row][col] = null;
+        }
+      }
+    }
+
+    return new Board(newSquares);
+  }
+
   public static createInitialBoard(): IBoard {
     const board = new Board();
 
