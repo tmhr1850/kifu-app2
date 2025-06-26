@@ -8,9 +8,11 @@ import { UIPosition } from '@/types/common';
 export default function BoardDemoPage() {
   const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);
   const [highlightedCells, setHighlightedCells] = useState<UIPosition[]>([]);
+  const [boardSize, setBoardSize] = useState<number>(9);
   
-  const handleCellClick = (position: UIPosition) => {
+  const handleCellClick = (position: UIPosition, size: number = boardSize) => {
     setSelectedCell(position);
+    setBoardSize(size);
     
     // デモ用：選択したマスの周囲をハイライト
     const newHighlights: UIPosition[] = [];
@@ -27,7 +29,7 @@ export default function BoardDemoPage() {
     directions.forEach(({ dr, dc }) => {
       const newRow = row + dr;
       const newCol = column + dc;
-      if (newRow >= 1 && newRow <= 9 && newCol >= 1 && newCol <= 9) {
+      if (newRow >= 1 && newRow <= size && newCol >= 1 && newCol <= size) {
         newHighlights.push({ row: newRow, column: newCol });
       }
     });
@@ -60,7 +62,7 @@ export default function BoardDemoPage() {
         <BoardUI
           selectedCell={selectedCell}
           highlightedCells={highlightedCells}
-          onCellClick={handleCellClick}
+          onCellClick={(position) => handleCellClick(position, 9)}
         />
         
         <h2 className="text-2xl font-bold text-center mb-4 mt-8">
@@ -70,7 +72,7 @@ export default function BoardDemoPage() {
           size={3}
           selectedCell={selectedCell}
           highlightedCells={highlightedCells}
-          onCellClick={handleCellClick}
+          onCellClick={(position) => handleCellClick(position, 3)}
         />
         
         <div className="mt-8 text-center">

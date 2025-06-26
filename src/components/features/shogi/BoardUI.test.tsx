@@ -31,7 +31,8 @@ describe('BoardUI', () => {
 
   it('縦座標（一-九）を表示する', () => {
     render(<BoardUI size={9} />);
-    KANJI_NUMBERS.forEach(kanji => {
+    // 9x9盤面では一から九までのみ表示される
+    KANJI_NUMBERS.slice(0, 9).forEach(kanji => {
       const coords = screen.getAllByText(kanji);
       expect(coords.length).toBeGreaterThan(0);
     });
@@ -272,6 +273,84 @@ describe('BoardUI', () => {
       fireEvent.click(targetCell);
       expect(targetCell).toHaveFocus();
       expect(targetCell).toHaveAttribute('tabindex', '0');
+    });
+  });
+
+  describe('異なるサイズの盤面での境界値テスト', () => {
+    it('3x3盤面の左上端でArrowUpとArrowLeftが効かない', () => {
+      render(<BoardUI size={3} />);
+      const topLeftCell = screen.getByTestId('cell-0-2'); // 1行1列目（UI座標系で1,1）
+      topLeftCell.focus();
+
+      // 上矢印キーが効かない（すでに一番上）
+      fireEvent.keyDown(topLeftCell, { key: 'ArrowUp' });
+      expect(topLeftCell).toHaveFocus();
+
+      // 右矢印キー（UI座標系で左端）が効かない
+      fireEvent.keyDown(topLeftCell, { key: 'ArrowRight' });
+      expect(topLeftCell).toHaveFocus();
+    });
+
+    it('3x3盤面の右下端でArrowDownとArrowLeftが効かない', () => {
+      render(<BoardUI size={3} />);
+      const bottomRightCell = screen.getByTestId('cell-2-0'); // 3行3列目（UI座標系で3,3）
+      bottomRightCell.focus();
+
+      // 下矢印キーが効かない（すでに一番下）
+      fireEvent.keyDown(bottomRightCell, { key: 'ArrowDown' });
+      expect(bottomRightCell).toHaveFocus();
+
+      // 左矢印キー（UI座標系で右端）が効かない
+      fireEvent.keyDown(bottomRightCell, { key: 'ArrowLeft' });
+      expect(bottomRightCell).toHaveFocus();
+    });
+
+    it('5x5盤面でのキーボード移動が正しく動作する', () => {
+      render(<BoardUI size={5} />);
+      const centerCell = screen.getByTestId('cell-2-2'); // 中央のマス（UI座標系で3,3）
+      centerCell.focus();
+
+      // 上に移動（UI座標系で row: 3 -> 2）
+      fireEvent.keyDown(centerCell, { key: 'ArrowUp' });
+      expect(screen.getByTestId('cell-1-2')).toHaveFocus();
+
+      // 右に移動（UI座標系では列番号が減る: column: 3 -> 2）
+      fireEvent.keyDown(screen.getByTestId('cell-1-2'), { key: 'ArrowRight' });
+      expect(screen.getByTestId('cell-1-3')).toHaveFocus();
+    });
+
+    it('異なるサイズの盤面で選択とハイライトが正しく動作する', () => {
+      const handleCellClick = vi.fn();
+      const { rerender } = render(
+        <BoardUI 
+          size={3} 
+          onCellClick={handleCellClick}
+          selectedCell={{ row: 2, column: 2 }}
+          highlightedCells={[{ row: 1, column: 2 }, { row: 3, column: 2 }]}
+        />
+      );
+
+      // 3x3盤面での選択確認
+      const cells3x3 = screen.getAllByRole('gridcell');
+      expect(cells3x3[getCellIndex(2, 2, 3)]).toHaveClass('bg-blue-500');
+      expect(cells3x3[getCellIndex(1, 2, 3)]).toHaveClass('bg-green-500');
+      expect(cells3x3[getCellIndex(3, 2, 3)]).toHaveClass('bg-green-500');
+
+      // 5x5盤面に変更
+      rerender(
+        <BoardUI 
+          size={5} 
+          onCellClick={handleCellClick}
+          selectedCell={{ row: 3, column: 3 }}
+          highlightedCells={[{ row: 2, column: 3 }, { row: 4, column: 3 }]}
+        />
+      );
+
+      // 5x5盤面での選択確認
+      const cells5x5 = screen.getAllByRole('gridcell');
+      expect(cells5x5[getCellIndex(3, 3, 5)]).toHaveClass('bg-blue-500');
+      expect(cells5x5[getCellIndex(2, 3, 5)]).toHaveClass('bg-green-500');
+      expect(cells5x5[getCellIndex(4, 3, 5)]).toHaveClass('bg-green-500');
     });
   });
 });

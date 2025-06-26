@@ -7,7 +7,10 @@ import { PieceUI } from '@/components/ui/PieceUI';
 import { IPiece } from '@/domain/models/piece/interface';
 import { UIPosition } from '@/types/common';
 
-export const KANJI_NUMBERS = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+export const KANJI_NUMBERS = [
+  '一', '二', '三', '四', '五', '六', '七', '八', '九',
+  '十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九'
+];
 
 interface BoardCellProps {
   rowIndex: number; // 0-8
@@ -20,6 +23,7 @@ interface BoardCellProps {
   onPieceClick?: (piece: IPiece) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>, position: UIPosition) => void;
   onFocus: (position: UIPosition) => void;
+  size: number; // 盤面のサイズ
 }
 
 const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
@@ -33,10 +37,11 @@ const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
   onPieceClick,
   onKeyDown,
   onFocus,
+  size,
 }, ref) => {
-  // UI表示用の座標(1-9)に変換
+  // UI表示用の座標(1-size)に変換
   const uiRow = rowIndex + 1;
-  const uiCol = 9 - colIndex;
+  const uiCol = size - colIndex;
   const position = { row: uiRow, column: uiCol };
 
   const handleCellClick = () => {
@@ -66,7 +71,7 @@ const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
         }
       )}
       role="gridcell"
-      aria-label={`${KANJI_NUMBERS[rowIndex]}${9 - colIndex}${piece ? ` - ${piece.player === 'SENTE' ? '先手' : '後手'}の${piece.type}` : ' - 空のマス'}`}
+      aria-label={`${KANJI_NUMBERS[rowIndex]}${size - colIndex}${piece ? ` - ${piece.player === 'SENTE' ? '先手' : '後手'}の${piece.type}` : ' - 空のマス'}`}
       onKeyDown={handleKeyDown}
       onClick={piece ? undefined : handleCellClick} // 駒がない場合のみセル全体をクリック可能に
       onFocus={() => onFocus(position)} // セルがフォーカスされたときに親コンポーネントに通知

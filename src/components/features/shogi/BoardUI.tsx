@@ -156,6 +156,7 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
                     onPieceClick={onPieceClick}
                     onKeyDown={handleKeyDown}
                     onFocus={setFocusedCell}
+                    size={size}
                   />
                 );
               })}
