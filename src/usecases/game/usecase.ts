@@ -66,6 +66,8 @@ export class GameUseCase implements IGameUseCase {
   }
 
   movePiece(fromUI: UIPosition, toUI: UIPosition, isPromotion: boolean = false): MoveResult {
+    // console.log('🎯 movePiece開始:', { fromUI, toUI, isPromotion });
+    
     if (!this.gameState) {
       return {
         success: false,
@@ -79,12 +81,20 @@ export class GameUseCase implements IGameUseCase {
     try {
       from = this.toDomainPos(fromUI)
       to = this.toDomainPos(toUI)
+      // console.log('🔄 座標変換:', { 
+      //   fromUI: `{row:${fromUI.row}, column:${fromUI.column}}`, 
+      //   fromDomain: `{row:${from.row}, column:${from.column}}`,
+      //   toUI: `{row:${toUI.row}, column:${toUI.column}}`,
+      //   toDomain: `{row:${to.row}, column:${to.column}}`
+      // });
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Invalid arguments')
       return { success: false, error: err }
     }
 
     const piece = currentGameState.board.getPiece(from)
+    // console.log('🔍 移動する駒:', piece ? { type: piece.type, player: piece.player } : 'null');
+    
     if (!piece) {
       return {
         success: false,
@@ -102,6 +112,14 @@ export class GameUseCase implements IGameUseCase {
       currentGameState.board,
       currentGameState.currentPlayer,
     )
+    
+    // console.log('📋 全合法手の確認:', legalMoves.length, '手');
+    // const relevantMoves = legalMoves.filter(move => 
+    //   move.from.row === from.row && move.from.column === from.column
+    // );
+    // console.log('🎯 この駒の合法手:', relevantMoves.map(m => 
+    //   `from(${m.from.row},${m.from.column}) to(${m.to.row},${m.to.column})`
+    // ));
 
     const isLegalMove = legalMoves.some(
       (move) =>
@@ -110,6 +128,11 @@ export class GameUseCase implements IGameUseCase {
         move.to.row === to.row &&
         move.to.column === to.column,
     )
+    
+    // console.log('✅ 移動可能判定:', { 
+    //   isLegalMove, 
+    //   tryingTo: `{row:${to.row}, column:${to.column}}`
+    // });
 
     if (!isLegalMove) {
       return {
@@ -273,13 +296,31 @@ export class GameUseCase implements IGameUseCase {
 
   getLegalMoves(fromUI?: UIPosition): UIPosition[] {
     if (!this.gameState || !fromUI) {
+      // console.log('❌ getLegalMoves: gameStateまたはfromUIがありません', { gameState: !!this.gameState, fromUI });
       return []
     }
     const from = this.toDomainPos(fromUI)
-    const legalMoves = this.gameRules
-      .generateLegalMoves(this.gameState.board, this.gameState.currentPlayer)
-      .filter((move) => move.from.row === from.row && move.from.column === from.column)
-    return legalMoves.map((m) => this.toUIPos(new Position(m.to.row, m.to.column)))
+    // console.log('🔍 getLegalMoves:', { 
+    //   fromUI, 
+    //   from: { row: from.row, column: from.column }, 
+    //   currentPlayer: this.gameState.currentPlayer 
+    // });
+    
+    const allLegalMoves = this.gameRules.generateLegalMoves(this.gameState.board, this.gameState.currentPlayer);
+    // console.log('📋 全ての合法手:', allLegalMoves.length, '手');
+    // console.log('👀 先頭5手:', allLegalMoves.slice(0, 5).map(m => ({ 
+    //   from: { row: m.from.row, column: m.from.column }, 
+    //   to: { row: m.to.row, column: m.to.column } 
+    // })));
+    
+    const legalMoves = allLegalMoves.filter((move) => move.from.row === from.row && move.from.column === from.column);
+    // console.log('🎯 この駒の合法手:', legalMoves.length, '手');
+    // console.log('🔍 フィルタ条件:', { targetRow: from.row, targetCol: from.column });
+    
+    const result = legalMoves.map((m) => this.toUIPos(new Position(m.to.row, m.to.column)));
+    // console.log('✅ UI座標の合法手:', result);
+    
+    return result;
   }
 
   canPromote(from: UIPosition, to: UIPosition): boolean {
