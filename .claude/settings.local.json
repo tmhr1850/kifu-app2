@@ -30,7 +30,15 @@
       "Bash(gh run list:*)",
       "Bash(git restore:*)",
       "Bash(rm:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(curl:*)",
+      "Bash(npx playwright show-trace:*)",
+      "Bash(git reset:*)",
+      "Bash(gh pr create:*)"
     ],
     "deny": []
   }

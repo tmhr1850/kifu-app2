@@ -39,6 +39,30 @@ vi.mock('@/usecases/gamemanager', () => {
     loadGame: vi.fn().mockResolvedValue(null),
     movePiece: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
     dropPiece: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
+    getBoardPiecesWithUIPositions: vi.fn(() => [
+      // テスト用の駒データ（初期配置の一部）
+      { piece: { type: 'KING', player: 'SENTE', isPromoted: () => false }, position: { row: 9, column: 5 } },
+      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 1 } },
+      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 2 } },
+      { piece: { type: 'KING', player: 'GOTE', isPromoted: () => false }, position: { row: 1, column: 5 } },
+      { piece: { type: 'PAWN', player: 'GOTE', isPromoted: () => false }, position: { row: 3, column: 1 } },
+    ]),
+    getBoardPieces: vi.fn(() => [
+      // テスト用の駒データ（初期配置の一部）
+      { piece: { type: 'KING', player: 'SENTE', isPromoted: () => false }, position: { row: 9, column: 5 } },
+      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 1 } },
+      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 2 } },
+      { piece: { type: 'KING', player: 'GOTE', isPromoted: () => false }, position: { row: 1, column: 5 } },
+      { piece: { type: 'PAWN', player: 'GOTE', isPromoted: () => false }, position: { row: 3, column: 1 } },
+    ]),
+    getUIBoardState: vi.fn(() => [
+      // テスト用の駒データ（初期配置の一部）
+      { piece: { type: 'KING', player: 'SENTE', isPromoted: () => false }, position: { row: 9, column: 5 } },
+      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 1 } },
+      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 2 } },
+      { piece: { type: 'KING', player: 'GOTE', isPromoted: () => false }, position: { row: 1, column: 5 } },
+      { piece: { type: 'PAWN', player: 'GOTE', isPromoted: () => false }, position: { row: 3, column: 1 } },
+    ]),
     getLegalMoves: vi.fn(() => []),
     canPromote: vi.fn(() => false),
     resign: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
