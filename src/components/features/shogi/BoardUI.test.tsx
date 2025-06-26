@@ -31,7 +31,8 @@ describe('BoardUI', () => {
 
   it('縦座標（一-九）を表示する', () => {
     render(<BoardUI size={9} />);
-    KANJI_NUMBERS.forEach(kanji => {
+    // 9x9盤面では一から九までのみ表示される
+    KANJI_NUMBERS.slice(0, 9).forEach(kanji => {
       const coords = screen.getAllByText(kanji);
       expect(coords.length).toBeGreaterThan(0);
     });
