@@ -167,9 +167,9 @@ describe('BoardUI', () => {
       expect(screen.getByTestId('cell-4-4')).toHaveFocus();
 
       fireEvent.keyDown(centerCell, { key: 'ArrowLeft' });
-      expect(screen.getByTestId('cell-4-5')).toHaveFocus();
+      expect(screen.getByTestId('cell-4-3')).toHaveFocus();
 
-      fireEvent.keyDown(screen.getByTestId('cell-4-5'), { key: 'ArrowRight' });
+      fireEvent.keyDown(screen.getByTestId('cell-4-3'), { key: 'ArrowRight' });
       expect(screen.getByTestId('cell-4-4')).toHaveFocus();
     });
 
@@ -185,6 +185,93 @@ describe('BoardUI', () => {
 
       fireEvent.keyDown(cell, { key: ' ' });
       expect(handleCellClick).toHaveBeenCalledWith({ row: 5, column: 5 });
+    });
+
+    it('盤面の端で矢印キーの境界チェックが動作する', () => {
+      render(<BoardUI size={9} />);
+      
+      // 左上端（1行9列）
+      const topLeftCell = screen.getByTestId('cell-0-0');
+      topLeftCell.focus();
+      
+      // 上と左への移動は効かない
+      fireEvent.keyDown(topLeftCell, { key: 'ArrowUp' });
+      expect(topLeftCell).toHaveFocus();
+      
+      fireEvent.keyDown(topLeftCell, { key: 'ArrowLeft' });
+      expect(topLeftCell).toHaveFocus();
+      
+      // 右下端（9行1列）
+      const bottomRightCell = screen.getByTestId('cell-8-8');
+      bottomRightCell.focus();
+      
+      // 下と右への移動は効かない
+      fireEvent.keyDown(bottomRightCell, { key: 'ArrowDown' });
+      expect(bottomRightCell).toHaveFocus();
+      
+      fireEvent.keyDown(bottomRightCell, { key: 'ArrowRight' });
+      expect(bottomRightCell).toHaveFocus();
+    });
+
+    it('駒がある場所でEnter/Spaceキーを押すとonPieceClickが呼ばれる', () => {
+      const handlePieceClick = vi.fn();
+      const piece = {
+        type: PieceType.PAWN,
+        player: Player.SENTE,
+        position: { row: 5, column: 5 },
+        getValidMoves: vi.fn(),
+        promote: vi.fn(),
+        clone: vi.fn(),
+        equals: vi.fn(),
+        isPromoted: vi.fn(() => false),
+      };
+      const pieces = [{ piece, position: { row: 5, column: 5 } }];
+
+      render(<BoardUI pieces={pieces} onPieceClick={handlePieceClick} size={9} />);
+      
+      const cellWithPiece = screen.getByTestId('cell-4-4');
+      cellWithPiece.focus();
+      
+      // Enterキーで駒を選択
+      fireEvent.keyDown(cellWithPiece, { key: 'Enter' });
+      expect(handlePieceClick).toHaveBeenCalledWith(piece);
+      
+      // Spaceキーでも駒を選択
+      fireEvent.keyDown(cellWithPiece, { key: ' ' });
+      expect(handlePieceClick).toHaveBeenCalledTimes(2);
+    });
+
+    it('フォーカスが移動した時に適切なtabIndexが設定される', () => {
+      render(<BoardUI size={9} />);
+      
+      const centerCell = screen.getByTestId('cell-4-4');
+      const adjacentCell = screen.getByTestId('cell-3-4');
+      
+      // 初期状態では中央のセルがフォーカス可能
+      expect(centerCell).toHaveAttribute('tabindex', '0');
+      expect(adjacentCell).toHaveAttribute('tabindex', '-1');
+      
+      // フォーカスを移動
+      centerCell.focus();
+      fireEvent.keyDown(centerCell, { key: 'ArrowUp' });
+      
+      // フォーカスが移動したセルのtabIndexが0になる
+      expect(adjacentCell).toHaveAttribute('tabindex', '0');
+      expect(centerCell).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('セルをクリックするとそのセルにフォーカスが移動する', () => {
+      render(<BoardUI size={9} />);
+      
+      const targetCell = screen.getByTestId('cell-2-3');
+      
+      // クリック前は別のセルがフォーカス可能
+      expect(targetCell).toHaveAttribute('tabindex', '-1');
+      
+      // クリックするとフォーカスが移動
+      fireEvent.click(targetCell);
+      expect(targetCell).toHaveFocus();
+      expect(targetCell).toHaveAttribute('tabindex', '0');
     });
   });
 });
