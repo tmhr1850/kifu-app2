@@ -85,6 +85,15 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
     }
   }, [managerState?.error]);
 
+  // AIが思考を開始したら選択状態をクリア
+  useEffect(() => {
+    if (managerState?.isAIThinking) {
+      setSelectedCell(null);
+      setHighlightedCells([]);
+      setSelectedCapturedPiece(null);
+    }
+  }, [managerState?.isAIThinking]);
+
   const capturedSente = useMemo((): CapturedPiece[] => {
     if (!gameState) return [];
     const pieceCount = new Map<PieceType, number>();
@@ -164,7 +173,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
   }, [selectedCell, selectedCapturedPiece, gameManager, managerState?.isAIThinking]);
 
   // 駒がクリックされた時の処理
-  const handlePieceClick = useCallback((piece: IPiece) => {
+  const handlePieceClick = useCallback((piece: IPiece, position?: UIPosition) => {
     if (!gameState || managerState?.isAIThinking) return;
     
     // プレイヤーの駒のみ選択可能
@@ -178,9 +187,14 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       return;
     }
 
-    const clickedPiece = boardPieces.find(p => p.piece === piece);
-    if (clickedPiece && clickedPiece.position) {
-      const uiPos = clickedPiece.position;
+    // 位置情報が渡されていれば直接使用、なければ駒から検索
+    let uiPos: UIPosition | undefined = position;
+    if (!uiPos) {
+      const clickedPiece = boardPieces.find(p => p.piece === piece);
+      uiPos = clickedPiece?.position;
+    }
+    
+    if (uiPos) {
       // console.log('✅ 駒選択:', { 
       //   piece: piece.type, 
       //   position: uiPos,
