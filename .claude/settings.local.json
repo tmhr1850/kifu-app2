@@ -38,7 +38,8 @@
       "Bash(curl:*)",
       "Bash(npx playwright show-trace:*)",
       "Bash(git reset:*)",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

@@ -21,14 +21,14 @@ interface PendingMove {
 export const GameScreen: React.FC = React.memo(function GameScreen() {
   const { getGameManager } = useGameManager();
   const gameManager = getGameManager();
-  const [managerState, setManagerState] = useState(gameManager.getState());
+  const [managerState, setManagerState] = useState(() => gameManager.getState());
 
   useEffect(() => {
     const unsubscribe = gameManager.subscribe(setManagerState);
     return () => unsubscribe();
   }, [gameManager]);
 
-  const gameState = managerState.gameState;
+  const gameState = managerState?.gameState;
   const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);
   const [selectedCapturedPiece, setSelectedCapturedPiece] = useState<PieceType | null>(null);
   const [highlightedCells, setHighlightedCells] = useState<UIPosition[]>([]);
@@ -80,10 +80,10 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
 
   // GameManagerのエラーを監視
   useEffect(() => {
-    if (managerState.error) {
+    if (managerState?.error) {
       setErrorMessage(managerState.error.message);
     }
-  }, [managerState.error]);
+  }, [managerState?.error]);
 
   const capturedSente = useMemo((): CapturedPiece[] => {
     if (!gameState) return [];
@@ -92,7 +92,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       pieceCount.set(piece.type, (pieceCount.get(piece.type) || 0) + 1);
     }
     return Array.from(pieceCount.entries()).map(([type, count]) => ({ type, count }));
-  }, [managerState]);
+  }, [gameState]);
 
   const capturedGote = useMemo((): CapturedPiece[] => {
     if (!gameState) return [];
@@ -101,18 +101,18 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       pieceCount.set(piece.type, (pieceCount.get(piece.type) || 0) + 1);
     }
     return Array.from(pieceCount.entries()).map(([type, count]) => ({ type, count }));
-  }, [managerState]);
+  }, [gameState]);
 
   // 盤面の駒を配列に変換（GameUseCaseと同じ座標変換を使用）
   const boardPieces = useMemo(() => {
     if (!gameState) return [];
     return gameManager.getBoardPieces();
-  }, [managerState, gameManager]);
+  }, [gameState, gameManager]);
 
   // セルがクリックされた時の処理
   const handleCellClick = useCallback(async (position: UIPosition) => {
     // AIが思考中の場合は操作を受け付けない
-    if (managerState.isAIThinking) {
+    if (managerState?.isAIThinking) {
       return;
     }
 
@@ -121,7 +121,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
     //   position,
     //   selectedCell,
     //   currentPlayer: gameState?.currentPlayer,
-    //   playerColor: managerState.playerColor
+    //   playerColor: managerState?.playerColor
     // });
 
     // 持ち駒が選択されている場合
@@ -161,27 +161,27 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       setSelectedCell(null);
       setHighlightedCells([]);
     }
-  }, [selectedCell, selectedCapturedPiece, gameManager, managerState.isAIThinking]);
+  }, [selectedCell, selectedCapturedPiece, gameManager, managerState?.isAIThinking]);
 
   // 駒がクリックされた時の処理
   const handlePieceClick = useCallback((piece: IPiece) => {
-    if (!gameState || managerState.isAIThinking) return;
+    if (!gameState || managerState?.isAIThinking) return;
     
     // デバッグログ追加
     // console.log('🎮 handlePieceClick:', {
     //   piece: { type: piece.type, player: piece.player },
     //   currentPlayer: gameState.currentPlayer,
-    //   playerColor: managerState.playerColor,
-    //   isAIThinking: managerState.isAIThinking
+    //   playerColor: managerState?.playerColor,
+    //   isAIThinking: managerState?.isAIThinking
     // });
     
     // プレイヤーの駒のみ選択可能
-    if (piece.player !== managerState.playerColor) {
+    if (piece.player !== managerState?.playerColor) {
       console.log('❌ 他のプレイヤーの駒です');
       return;
     }
     // 現在の手番でない場合は選択不可
-    if (gameState.currentPlayer !== managerState.playerColor) {
+    if (gameState.currentPlayer !== managerState?.playerColor) {
       console.log('❌ 現在の手番ではありません');
       return;
     }
@@ -200,13 +200,13 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       // console.log('🎯 有効な移動先:', validMoves);
       setHighlightedCells(validMoves);
     }
-  }, [gameManager, gameState, boardPieces, managerState.playerColor, managerState.isAIThinking]);
+  }, [gameManager, gameState, boardPieces, managerState?.playerColor, managerState?.isAIThinking]);
 
   // 持ち駒がクリックされた時の処理
   const handleCapturedPieceClick = useCallback((pieceType: PieceType) => {
-    if (!gameState || managerState.isAIThinking) return;
+    if (!gameState || managerState?.isAIThinking) return;
     // 現在の手番でない場合は選択不可
-    if (gameState.currentPlayer !== managerState.playerColor) {
+    if (gameState.currentPlayer !== managerState?.playerColor) {
       return;
     }
     
@@ -215,7 +215,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
 
     const validDropPositions = gameManager.getLegalDropPositions(pieceType);
     setHighlightedCells(validDropPositions);
-  }, [gameManager, gameState, managerState.playerColor, managerState.isAIThinking]);
+  }, [gameManager, gameState, managerState?.playerColor, managerState?.isAIThinking]);
 
   // 成り選択の処理
   const handlePromotionChoice = useCallback(async (promote: boolean) => {
@@ -245,11 +245,11 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
   // 投了
   const handleResign = useCallback(async () => {
     if (gameState) {
-      const newState = await gameManager.resign(managerState.playerColor);
+      const newState = await gameManager.resign(managerState?.playerColor);
       setManagerState(newState);
       setShowResignDialog(false);
     }
-  }, [gameManager, gameState, managerState.playerColor]);
+  }, [gameManager, gameState, managerState?.playerColor]);
 
   if (!gameState) {
     return <div>Loading...</div>;
@@ -271,7 +271,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
             <h1 className="text-3xl font-bold mb-2">将棋ゲーム</h1>
             <div className="flex justify-center items-center gap-4">
               <span className="text-xl font-semibold">{currentPlayerText}</span>
-              {managerState.isAIThinking && (
+              {managerState?.isAIThinking && (
                 <span className="text-blue-600 font-semibold">AIが考え中...</span>
               )}
               {gameState.isCheck && gameState.status === 'playing' && (
@@ -294,10 +294,10 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
               <CapturedPiecesUI
                 capturedPieces={capturedGote}
                 player={Player.GOTE}
-                isMyTurn={managerState.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE && !managerState.isAIThinking}
+                isMyTurn={managerState?.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE && !managerState?.isAIThinking}
                 onPieceClick={handleCapturedPieceClick}
                 selectedPiece={
-                  managerState.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE ? selectedCapturedPiece : null
+                  managerState?.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE ? selectedCapturedPiece : null
                 }
               />
             </div>
@@ -312,7 +312,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
                 selectedCell={selectedCell}
               />
               {/* AI思考中のオーバーレイ */}
-              {managerState.isAIThinking && (
+              {managerState?.isAIThinking && (
                 <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center rounded-lg">
                   <div className="bg-white px-4 py-2 rounded-lg shadow-lg">
                     <span className="text-lg font-semibold text-blue-600">AIが考え中...</span>
@@ -327,10 +327,10 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
               <CapturedPiecesUI
                 capturedPieces={capturedSente}
                 player={Player.SENTE}
-                isMyTurn={managerState.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE && !managerState.isAIThinking}
+                isMyTurn={managerState?.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE && !managerState?.isAIThinking}
                 onPieceClick={handleCapturedPieceClick}
                 selectedPiece={
-                  managerState.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE ? selectedCapturedPiece : null
+                  managerState?.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE ? selectedCapturedPiece : null
                 }
               />
             </div>
@@ -341,14 +341,14 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
             <button
               onClick={handleNewGame}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={managerState.isAIThinking}
+              disabled={managerState?.isAIThinking}
             >
               新規対局
             </button>
             <button
               onClick={() => setShowResignDialog(true)}
               className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={gameState.status === 'checkmate' || gameState.status === 'resigned' || managerState.isAIThinking}
+              disabled={gameState.status === 'checkmate' || gameState.status === 'resigned' || managerState?.isAIThinking}
             >
               投了
             </button>
