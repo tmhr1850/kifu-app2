@@ -32,6 +32,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
   const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);
   const [selectedCapturedPiece, setSelectedCapturedPiece] = useState<PieceType | null>(null);
   const [highlightedCells, setHighlightedCells] = useState<UIPosition[]>([]);
+  
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [showResignDialog, setShowResignDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -39,14 +40,20 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
   // 初期化時に保存されたゲームを読み込む
   useEffect(() => {
     const loadSavedGame = async () => {
-      const savedState = await gameManager.loadGame();
-      if (savedState) {
-        setManagerState(savedState);
-      } else {
-        // 保存されたゲームがない場合は新規ゲームを開始
-        const newState = await gameManager.startNewGame();
-        setManagerState(newState);
-      }
+      // 🐛 デバッグ：保存されたゲームをクリアして新規ゲーム開始
+      console.log('🔧 DEBUG: Clearing saved game and starting fresh');
+      gameManager.clearSavedGame();
+      const newState = await gameManager.startNewGame();
+      setManagerState(newState);
+      
+      // const savedState = await gameManager.loadGame();
+      // if (savedState) {
+      //   setManagerState(savedState);
+      // } else {
+      //   // 保存されたゲームがない場合は新規ゲームを開始
+      //   const newState = await gameManager.startNewGame();
+      //   setManagerState(newState);
+      // }
     };
     loadSavedGame();
   }, [gameManager]);
@@ -195,15 +202,15 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
     }
     
     if (uiPos) {
-      // console.log('✅ 駒選択:', { 
-      //   piece: piece.type, 
-      //   position: uiPos,
-      //   詳細: `UI座標 row=${uiPos.row}, col=${uiPos.column}`
-      // });
+      console.log('✅ 駒選択:', { 
+        piece: piece.type, 
+        position: uiPos,
+        詳細: `UI座標 row=${uiPos.row}, col=${uiPos.column}`
+      });
       setSelectedCell(uiPos);
       setSelectedCapturedPiece(null);
       const validMoves = gameManager.getLegalMoves(uiPos);
-      // console.log('🎯 有効な移動先:', validMoves);
+      console.log('🎯 有効な移動先:', validMoves);
       setHighlightedCells(validMoves);
     }
   }, [gameManager, gameState, boardPieces, managerState?.playerColor, managerState?.isAIThinking]);
