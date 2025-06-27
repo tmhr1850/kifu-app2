@@ -17,6 +17,6 @@ test('将棋盤が正しく表示される', async ({ page }) => {
   await expect(board).toBeVisible();
   
   // マス目の数を確認（9x9 = 81マス）
-  const cells = await page.locator('[aria-label^="マス"]').count();
+  const cells = await page.locator('[role="gridcell"]').count();
   expect(cells).toBe(81);
 });

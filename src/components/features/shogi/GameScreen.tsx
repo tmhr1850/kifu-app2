@@ -167,14 +167,6 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
   const handlePieceClick = useCallback((piece: IPiece) => {
     if (!gameState || managerState?.isAIThinking) return;
     
-    // デバッグログ追加
-    // console.log('🎮 handlePieceClick:', {
-    //   piece: { type: piece.type, player: piece.player },
-    //   currentPlayer: gameState.currentPlayer,
-    //   playerColor: managerState?.playerColor,
-    //   isAIThinking: managerState?.isAIThinking
-    // });
-    
     // プレイヤーの駒のみ選択可能
     if (piece.player !== managerState?.playerColor) {
       console.log('❌ 他のプレイヤーの駒です');

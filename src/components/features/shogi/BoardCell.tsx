@@ -46,7 +46,12 @@ const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
 
   const handleCellClick = () => {
     onCellClick(position);
-    onFocus(position); // クリックされたセルにフォーカスを移動
+    onFocus(position);
+  };
+
+  const handlePieceClick = (piece: IPiece) => {
+    onPieceClick?.(piece);
+    onFocus(position);
   };
   
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -73,18 +78,15 @@ const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
       role="gridcell"
       aria-label={`${KANJI_NUMBERS[rowIndex]}${size - colIndex}${piece ? ` - ${piece.player === 'SENTE' ? '先手' : '後手'}の${piece.type}` : ' - 空のマス'}`}
       onKeyDown={handleKeyDown}
-      onClick={piece ? undefined : handleCellClick} // 駒がない場合のみセル全体をクリック可能に
+      onClick={piece ? undefined : handleCellClick} // 駒がある場合はセルクリックを無効化
       onFocus={() => onFocus(position)} // セルがフォーカスされたときに親コンポーネントに通知
     >
       {piece ? (
         <PieceUI
           piece={piece}
           size="sm"
-          onClick={() => {
-            onPieceClick?.(piece);
-            onFocus(position); // 駒がクリックされた時もフォーカスを移動
-          }}
-          className="absolute inset-1"
+          onClick={handlePieceClick}
+          className="absolute inset-1 pointer-events-auto"
           aria-describedby={`piece-info-${uiRow}-${uiCol}`}
           tabIndex={-1} // 駒自体はフォーカス対象外にする
         />
