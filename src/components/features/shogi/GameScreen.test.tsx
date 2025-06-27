@@ -1,83 +1,96 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { GameScreen } from './GameScreen';
 
 // モックの設定
-vi.mock('@/usecases/gamemanager', () => {
-  const mockGameManager = {
-    getState: vi.fn(() => ({
-      gameState: {
-        board: {
-          getPiece: vi.fn(() => null),
-        },
-        currentPlayer: 'SENTE',
-        history: [],
-        capturedPieces: { sente: [], gote: [] },
-        status: 'playing',
-        isCheck: false,
-      },
-      isAIThinking: false,
-      playerColor: 'SENTE',
-      aiColor: 'GOTE',
-    })),
-    startNewGame: vi.fn().mockResolvedValue({
-      gameState: {
-        board: {
-          getPiece: vi.fn(() => null),
-        },
-        currentPlayer: 'SENTE',
-        history: [],
-        capturedPieces: { sente: [], gote: [] },
-        status: 'playing',
-        isCheck: false,
-      },
-      isAIThinking: false,
-      playerColor: 'SENTE',
-      aiColor: 'GOTE',
-    }),
-    loadGame: vi.fn().mockResolvedValue(null),
-    movePiece: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
-    dropPiece: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
-    getBoardPiecesWithUIPositions: vi.fn(() => [
-      // テスト用の駒データ（初期配置の一部）
-      { piece: { type: 'KING', player: 'SENTE', isPromoted: () => false }, position: { row: 9, column: 5 } },
-      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 1 } },
-      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 2 } },
-      { piece: { type: 'KING', player: 'GOTE', isPromoted: () => false }, position: { row: 1, column: 5 } },
-      { piece: { type: 'PAWN', player: 'GOTE', isPromoted: () => false }, position: { row: 3, column: 1 } },
-    ]),
-    getBoardPieces: vi.fn(() => [
-      // テスト用の駒データ（初期配置の一部）
-      { piece: { type: 'KING', player: 'SENTE', isPromoted: () => false }, position: { row: 9, column: 5 } },
-      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 1 } },
-      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 2 } },
-      { piece: { type: 'KING', player: 'GOTE', isPromoted: () => false }, position: { row: 1, column: 5 } },
-      { piece: { type: 'PAWN', player: 'GOTE', isPromoted: () => false }, position: { row: 3, column: 1 } },
-    ]),
-    getUIBoardState: vi.fn(() => [
-      // テスト用の駒データ（初期配置の一部）
-      { piece: { type: 'KING', player: 'SENTE', isPromoted: () => false }, position: { row: 9, column: 5 } },
-      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 1 } },
-      { piece: { type: 'PAWN', player: 'SENTE', isPromoted: () => false }, position: { row: 7, column: 2 } },
-      { piece: { type: 'KING', player: 'GOTE', isPromoted: () => false }, position: { row: 1, column: 5 } },
-      { piece: { type: 'PAWN', player: 'GOTE', isPromoted: () => false }, position: { row: 3, column: 1 } },
-    ]),
-    getLegalMoves: vi.fn(() => []),
-    canPromote: vi.fn(() => false),
-    resign: vi.fn().mockResolvedValue({ gameState: {}, isAIThinking: false, playerColor: 'SENTE', aiColor: 'GOTE' }),
-    getLegalDropPositions: vi.fn(() => []),
-    clearSavedGame: vi.fn(),
-  };
+const mockGameManager = {
+  getState: vi.fn(),
+  startNewGame: vi.fn(),
+  loadGame: vi.fn(),
+  movePiece: vi.fn(),
+  dropPiece: vi.fn(),
+  getBoardPieces: vi.fn(),
+  getLegalMoves: vi.fn(),
+  canPromote: vi.fn(),
+  resign: vi.fn(),
+  getLegalDropPositions: vi.fn(),
+  clearSavedGame: vi.fn(),
+  subscribe: vi.fn(() => () => {}), // subscribeのモックを追加
+};
 
-  return {
-    GameManager: vi.fn().mockImplementation(() => mockGameManager),
-  };
-});
+vi.mock('@/hooks/useGameManager', () => ({
+  useGameManager: () => ({
+    getGameManager: () => mockGameManager,
+  }),
+}));
 
 describe('GameScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // デフォルトのmockGameManagerの状態を設定
+    mockGameManager.getState.mockReturnValue({
+      gameState: {
+        board: {
+          getPiece: vi.fn(() => null),
+        },
+        currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: {
+          sente: [],
+          gote: [],
+        },
+        status: 'playing',
+        isCheck: false,
+      },
+      isAIThinking: false,
+      playerColor: 'SENTE',
+      aiColor: 'GOTE',
+    });
+
+    mockGameManager.getBoardPieces.mockReturnValue([
+      {
+        piece: {
+          type: 'KING',
+          player: 'SENTE',
+          position: { row: 9, column: 5 },
+        },
+        position: { row: 9, column: 5 },
+      },
+      {
+        piece: {
+          type: 'PAWN',
+          player: 'SENTE',
+          position: { row: 7, column: 1 },
+        },
+        position: { row: 7, column: 1 },
+      },
+      {
+        piece: {
+          type: 'PAWN',
+          player: 'SENTE',
+          position: { row: 7, column: 2 },
+        },
+        position: { row: 7, column: 2 },
+      },
+      {
+        piece: {
+          type: 'KING',
+          player: 'GOTE',
+          position: { row: 1, column: 5 },
+        },
+        position: { row: 1, column: 5 },
+      },
+      {
+        piece: {
+          type: 'PAWN',
+          player: 'GOTE',
+          position: { row: 3, column: 1 },
+        },
+        position: { row: 3, column: 1 },
+      },
+    ]);
   });
 
   it('ゲーム画面の基本要素を表示する', () => {
@@ -104,6 +117,51 @@ describe('GameScreen', () => {
 
     // 後手の持ち駒エリア
     expect(screen.getByTestId('captured-pieces-gote')).toBeInTheDocument();
+  });
+
+  it('盤上の駒が正しく表示される', () => {
+    render(<GameScreen />);
+    // モックで設定した駒が表示されているか確認
+    expect(screen.getByLabelText(/先手の王/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/先手の歩/)).toHaveLength(2);
+    expect(screen.getByLabelText(/後手の王/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/後手の歩/)).toBeInTheDocument();
+  });
+
+  it('持ち駒が正しく表示される', async () => {
+    // 持ち駒がある状態をモック
+    mockGameManager.getState.mockReturnValue({
+      gameState: {
+        board: {
+          getPiece: vi.fn(() => null),
+        },
+        currentPlayer: 'SENTE',
+        history: [],
+        capturedPieces: {
+          sente: [{ type: 'PAWN', player: 'SENTE' }],
+          gote: [{ type: 'ROOK', player: 'GOTE' }],
+        },
+        status: 'playing',
+        isCheck: false,
+      },
+      isAIThinking: false,
+      playerColor: 'SENTE',
+      aiColor: 'GOTE',
+    });
+
+    render(<GameScreen />);
+
+    // 先手の持ち駒に歩があるか
+    await waitFor(() => {
+      const senteArea = screen.getByTestId('captured-pieces-sente');
+      expect(within(senteArea).getByLabelText(/歩/)).toBeInTheDocument();
+    });
+
+    // 後手の持ち駒に飛車があるか
+    await waitFor(() => {
+      const goteArea = screen.getByTestId('captured-pieces-gote');
+      expect(within(goteArea).getByLabelText(/飛車/)).toBeInTheDocument();
+    });
   });
 
   it.skip('駒をクリックすると移動可能なマスがハイライトされる', async () => {
