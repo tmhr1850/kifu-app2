@@ -152,7 +152,7 @@ describe('BoardUI', () => {
     const pawnElement = screen.getByLabelText('先手の歩');
     fireEvent.click(pawnElement);
 
-    expect(handlePieceClick).toHaveBeenCalledWith(piece);
+    expect(handlePieceClick).toHaveBeenCalledWith(piece, { row: 6, column: 4 });
   });
 
   describe('キーボード操作', () => {
@@ -235,7 +235,7 @@ describe('BoardUI', () => {
       
       // Enterキーで駒を選択
       fireEvent.keyDown(cellWithPiece, { key: 'Enter' });
-      expect(handlePieceClick).toHaveBeenCalledWith(piece);
+      expect(handlePieceClick).toHaveBeenCalledWith(piece, { row: 5, column: 5 });
       
       // Spaceキーでも駒を選択
       fireEvent.keyDown(cellWithPiece, { key: ' ' });
