@@ -109,7 +109,11 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
     <div className="w-full max-w-2xl mx-auto p-4">
       <div className="aspect-square bg-amber-100 rounded-lg shadow-lg p-4">
         <div 
-          className={`grid grid-cols-[auto_repeat(${size},1fr)] grid-rows-[auto_repeat(${size},1fr)] gap-0 h-full`}
+          className="grid grid-cols-10 grid-rows-10 gap-0 h-full"
+          style={{
+            gridTemplateColumns: `auto repeat(${size}, 1fr)`,
+            gridTemplateRows: `auto repeat(${size}, 1fr)`
+          }}
           role="grid"
           aria-label="将棋盤"
         >

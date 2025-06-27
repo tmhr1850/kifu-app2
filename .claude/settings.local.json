@@ -39,7 +39,8 @@
       "Bash(npx playwright show-trace:*)",
       "Bash(git reset:*)",
       "Bash(gh pr create:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(gh issue close:*)"
     ],
     "deny": []
   }
