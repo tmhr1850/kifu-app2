@@ -29,8 +29,8 @@ describe('GameScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // デフォルトのmockGameManagerの状態を設定
-    mockGameManager.getState.mockReturnValue({
+    // デフォルトの状態を定義
+    const defaultState = {
       gameState: {
         board: {
           getPiece: vi.fn(() => null),
@@ -47,7 +47,16 @@ describe('GameScreen', () => {
       isAIThinking: false,
       playerColor: 'SENTE',
       aiColor: 'GOTE',
-    });
+    };
+
+    // デフォルトのmockGameManagerの状態を設定
+    mockGameManager.getState.mockReturnValue(defaultState);
+    
+    // loadGameは保存されたゲームがないことをシミュレート（初期化時に新規ゲーム開始）
+    mockGameManager.loadGame.mockResolvedValue(null);
+    
+    // startNewGameは新しいゲーム状態を返す
+    mockGameManager.startNewGame.mockResolvedValue(defaultState);
 
     mockGameManager.getBoardPieces.mockReturnValue([
       {
@@ -93,8 +102,13 @@ describe('GameScreen', () => {
     ]);
   });
 
-  it('ゲーム画面の基本要素を表示する', () => {
+  it('ゲーム画面の基本要素を表示する', async () => {
     render(<GameScreen />);
+
+    // GameScreenの初期化が完了するまで待機
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
 
     // 将棋盤が表示される
     expect(screen.getByLabelText('将棋盤')).toBeInTheDocument();
@@ -109,8 +123,13 @@ describe('GameScreen', () => {
     expect(screen.getByRole('button', { name: /投了/ })).toBeInTheDocument();
   });
 
-  it('持ち駒エリアを表示する', () => {
+  it('持ち駒エリアを表示する', async () => {
     render(<GameScreen />);
+
+    // GameScreenの初期化が完了するまで待機
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
 
     // 先手の持ち駒エリア
     expect(screen.getByTestId('captured-pieces-sente')).toBeInTheDocument();
@@ -119,8 +138,14 @@ describe('GameScreen', () => {
     expect(screen.getByTestId('captured-pieces-gote')).toBeInTheDocument();
   });
 
-  it('盤上の駒が正しく表示される', () => {
+  it('盤上の駒が正しく表示される', async () => {
     render(<GameScreen />);
+
+    // GameScreenの初期化が完了するまで待機
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
     // モックで設定した駒が表示されているか確認
     expect(screen.getByLabelText(/先手の王/)).toBeInTheDocument();
     expect(screen.getAllByLabelText(/先手の歩/)).toHaveLength(2);
@@ -130,7 +155,7 @@ describe('GameScreen', () => {
 
   it('持ち駒が正しく表示される', async () => {
     // 持ち駒がある状態をモック
-    mockGameManager.getState.mockReturnValue({
+    const stateWithCapturedPieces = {
       gameState: {
         board: {
           getPiece: vi.fn(() => null),
@@ -147,9 +172,19 @@ describe('GameScreen', () => {
       isAIThinking: false,
       playerColor: 'SENTE',
       aiColor: 'GOTE',
-    });
+    };
+    
+    mockGameManager.getState.mockReturnValue(stateWithCapturedPieces);
+    // 初期化時のモック設定も必要
+    mockGameManager.loadGame.mockResolvedValue(null);
+    mockGameManager.startNewGame.mockResolvedValue(stateWithCapturedPieces);
 
     render(<GameScreen />);
+
+    // GameScreenの初期化が完了するまで待機（Loading状態が終わるまで）
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
 
     // 先手の持ち駒に歩があるか
     await waitFor(() => {
@@ -157,10 +192,10 @@ describe('GameScreen', () => {
       expect(within(senteArea).getByLabelText(/歩/)).toBeInTheDocument();
     });
 
-    // 後手の持ち駒に飛車があるか
+    // 後手の持ち駒に飛車があるか（表示は省略形の「飛」）
     await waitFor(() => {
       const goteArea = screen.getByTestId('captured-pieces-gote');
-      expect(within(goteArea).getByLabelText(/飛車/)).toBeInTheDocument();
+      expect(within(goteArea).getByLabelText(/飛/)).toBeInTheDocument();
     });
   });
 
