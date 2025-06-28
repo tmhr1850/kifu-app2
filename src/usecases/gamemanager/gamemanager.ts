@@ -70,10 +70,7 @@ export class GameManager implements IGameManager {
     // ブラウザ環境ではWebWorkerAI、サーバー環境ではSimpleAIを使用
     this.aiEngine = aiEngine || (typeof window !== 'undefined' ? new WebWorkerAI() : new SimpleAI())
     
-    console.log('🚀 GameManager constructor: Starting new game...');
     const initialGameState = this.gameUseCase.startNewGame()
-    console.log('🎯 GameManager constructor: Game started, board pieces:', 
-      initialGameState.board.getPieces(Player.SENTE).length + initialGameState.board.getPieces(Player.GOTE).length);
     
     this.state = {
       gameState: initialGameState,
