@@ -40,7 +40,12 @@
       "Bash(git reset:*)",
       "Bash(gh pr create:*)",
       "Bash(rg:*)",
-      "Bash(gh issue close:*)"
+      "Bash(gh issue close:*)",
+      "Bash(pkill:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(open http://localhost:3001)",
+      "Bash(touch:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

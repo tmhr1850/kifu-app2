@@ -20,7 +20,7 @@ interface BoardCellProps {
   isHighlighted: boolean;
   isFocused: boolean;
   onCellClick: (position: UIPosition) => void;
-  onPieceClick?: (piece: IPiece) => void;
+  onPieceClick?: (piece: IPiece, position?: UIPosition) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>, position: UIPosition) => void;
   onFocus: (position: UIPosition) => void;
   size: number; // 盤面のサイズ
@@ -50,7 +50,7 @@ const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
   };
 
   const handlePieceClick = (piece: IPiece) => {
-    onPieceClick?.(piece);
+    onPieceClick?.(piece, position);
     onFocus(position);
   };
   

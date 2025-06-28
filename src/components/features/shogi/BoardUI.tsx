@@ -10,7 +10,7 @@ import { BoardCell, KANJI_NUMBERS } from './BoardCell';
 interface BoardUIProps {
   size?: number;
   onCellClick?: (position: UIPosition) => void;
-  onPieceClick?: (piece: IPiece) => void;
+  onPieceClick?: (piece: IPiece, position?: UIPosition) => void;
   selectedCell?: UIPosition | null;
   highlightedCells?: UIPosition[];
   pieces?: { piece: IPiece; position: UIPosition }[];
@@ -95,7 +95,7 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
         // フォーカス位置の駒または空のセルをクリック
         const piece = piecesMap.get(`${position.row}-${position.column}`);
         if (piece) {
-          onPieceClick?.(piece);
+          onPieceClick?.(piece, position);
         } else {
           onCellClick?.(position);
         }
