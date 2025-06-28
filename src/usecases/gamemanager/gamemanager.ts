@@ -144,33 +144,20 @@ export class GameManager implements IGameManager {
     to: UIPosition, 
     isPromotion?: boolean
   ): Promise<GameManagerState> {
-    // デバッグログ追加
-    // console.log('🎲 GameManager.movePiece:', {
-    //   from,
-    //   to,
-    //   currentPlayer: this.state.gameState.currentPlayer,
-    //   playerColor: this.state.playerColor,
-    //   isAIThinking: this.state.isAIThinking,
-    //   isPromotion
-    // });
     
     // AIが思考中の場合は操作を受け付けない
     if (this.state.isAIThinking) {
-      // console.log('❌ AI思考中のため操作を受け付けません');
       return this.state
     }
     
     // プレイヤーの手番でない場合は操作を受け付けない
     if (this.state.gameState.currentPlayer !== this.state.playerColor) {
-      // console.log('❌ プレイヤーの手番ではないため操作を受け付けません');
       return this.state
     }
     
     const result = this.gameUseCase.movePiece(from, to, isPromotion)
-    // console.log('🎯 GameUseCase.movePiece結果:', { success: result.success, error: result.error?.message });
     
     if (result.success && result.gameState) {
-      // console.log('✅ 駒移動成功！新しい手番:', result.gameState.currentPlayer);
       this.setState({
         gameState: result.gameState,
         error: undefined
@@ -182,11 +169,9 @@ export class GameManager implements IGameManager {
       
       // ゲームが終了していない場合で、AI自動実行が有効な場合、AIの手を実行
       if (result.gameState.status === 'playing' && this.config.enableAutoAI) {
-        // console.log('🤖 AIの手を実行します...');
         await this.executeAIMove()
       }
     } else {
-      // console.log('❌ 駒移動失敗:', result.error?.message);
       this.setState({
         error: result.error
       })

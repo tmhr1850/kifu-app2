@@ -126,13 +126,6 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       return;
     }
 
-    // デバッグログ追加
-    // console.log('🎯 handleCellClick:', {
-    //   position,
-    //   selectedCell,
-    //   currentPlayer: gameState?.currentPlayer,
-    //   playerColor: managerState?.playerColor
-    // });
 
     // 持ち駒が選択されている場合
     if (selectedCapturedPiece) {
@@ -151,17 +144,12 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       const from = selectedCell;
       const to = position;
       
-      // console.log('🎮 駒移動試行:', { from, to });
-
       // 成りが可能かチェック
       if (gameManager.canPromote(from, to)) {
-        // console.log('🔄 成り確認中...');
         setPendingMove({ from, to });
       } else {
         // 通常の移動
-        // console.log('🎯 通常移動実行中...');
         const newState = await gameManager.movePiece(from, to);
-        // console.log('🎯 移動結果:', { success: !newState.error, error: newState.error?.message });
         setManagerState(newState);
         if (!newState.error) {
           setErrorMessage(null); // 成功時はエラーメッセージをクリア
