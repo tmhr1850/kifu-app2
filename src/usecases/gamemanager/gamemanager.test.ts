@@ -4,6 +4,7 @@ import { IBoard } from '@/domain/models/piece/interface'
 import { Player, PieceType, Move } from '@/domain/models/piece/types'
 import { IAIEngine } from '@/domain/services/ai-engine'
 import { UIPosition } from '@/types/common'
+import { SimpleAI } from '@/usecases/ai/simple-ai'
 
 import { GameManager } from './gamemanager'
 
@@ -104,36 +105,65 @@ describe('GameManager', () => {
       expect(state.gameState.history.length).toBeGreaterThan(0)
     })
     
-    it.skip('AIの手番では駒を移動できない', async () => {
-      // 先に1手指してAIの手番にする
-      await gameManager.movePiece({ row: 7, column: 7 }, { row: 7, column: 6 })
+    it('AIの手番では駒を移動できない', async () => {
+      // AI自動実行を有効にしたGameManagerを作成（プレイヤーが後手担当）
+      const aiGameManager = new GameManager(new SimpleAI(), { 
+        enableAutoAI: true,
+        playerColor: Player.GOTE 
+      })
+      await aiGameManager.startNewGame()
       
-      // AIが思考中の間は移動できない
-      const initialState = gameManager.getState()
-      const state = await gameManager.movePiece({ row: 3, column: 7 }, { row: 3, column: 6 })
+      // AIが先手で最初に指すのを待つ
+      await new Promise(resolve => setTimeout(resolve, 300))
       
-      expect(state).toBe(initialState)
+      const currentState = aiGameManager.getState()
+      // 現在は後手番（プレイヤーの手番）のはず
+      expect(currentState.gameState.currentPlayer).toBe(Player.GOTE)
+      
+      // プレイヤー（後手）が駒を動かす
+      await aiGameManager.movePiece({ row: 3, column: 7 }, { row: 4, column: 7 })
+      
+      // AIの手番になってAIが動かすのを待つ
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // この時点で先手番（AI）になっているはず
+      const afterAIMove = aiGameManager.getState()
+      expect(afterAIMove.gameState.currentPlayer).toBe(Player.SENTE)
+      
+      // プレイヤー（後手担当）が先手番の時に駒を動かそうとしても無効
+      const beforeInvalidMove = aiGameManager.getState()
+      await aiGameManager.movePiece({ row: 3, column: 6 }, { row: 4, column: 6 })
+      const afterInvalidMove = aiGameManager.getState()
+      
+      // 状態が変わらないことを確認
+      expect(afterInvalidMove.gameState.history.length).toBe(beforeInvalidMove.gameState.history.length)
     })
     
-    it.skip('不正な移動の場合エラーを設定する', async () => {
-      const from: UIPosition = { row: 1, column: 1 }
-      const to: UIPosition = { row: 9, column: 9 }
+    it('不正な移動の場合エラーを設定する', async () => {
+      // 存在しない位置から移動を試行
+      const from: UIPosition = { row: 5, column: 5 } // 空のマス
+      const to: UIPosition = { row: 6, column: 5 }
       
       await gameManager.movePiece(from, to)
       
+      const state = gameManager.getState()
       expect(state.error).toBeDefined()
     })
     
-    it.skip('プレイヤーの手の後、AIが自動的に指す', async () => {
-      const from: UIPosition = { row: 7, column: 7 }
-      const to: UIPosition = { row: 7, column: 6 }
+    it('プレイヤーの手の後、AIが自動的に指す', async () => {
+      // AI自動実行を有効にしたGameManagerを作成
+      const aiGameManager = new GameManager(new SimpleAI(), { enableAutoAI: true })
+      await aiGameManager.startNewGame()
       
-      await gameManager.movePiece(from, to)
+      const from: UIPosition = { row: 7, column: 7 }
+      const to: UIPosition = { row: 6, column: 7 }
+      
+      await aiGameManager.movePiece(from, to)
       
       // 少し待ってAIの手が実行されるのを待つ
       await new Promise(resolve => setTimeout(resolve, 200))
       
-      const newState = gameManager.getState()
+      const newState = aiGameManager.getState()
       expect(newState.gameState.history.length).toBeGreaterThan(1)
       expect(newState.gameState.currentPlayer).toBe(Player.SENTE)
     })
