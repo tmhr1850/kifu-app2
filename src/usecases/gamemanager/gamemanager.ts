@@ -65,7 +65,7 @@ export class GameManager implements IGameManager {
   private saveGameDebounced: () => void
   private subscribers: ((state: GameManagerState) => void)[] = []
 
-  constructor(aiEngine?: IAIEngine) {
+  constructor(aiEngine?: IAIEngine, config?: GameManagerConfig) {
     this.gameUseCase = new GameUseCase()
     // ブラウザ環境ではWebWorkerAI、サーバー環境ではSimpleAIを使用
     this.aiEngine = aiEngine || (typeof window !== 'undefined' ? new WebWorkerAI() : new SimpleAI())
@@ -83,10 +83,11 @@ export class GameManager implements IGameManager {
     }
     
     this.config = {
-      playerColor: Player.SENTE,
-      aiThinkingTime: DEFAULT_AI_THINKING_TIME,
-      aiDifficultyLevel: DEFAULT_AI_DIFFICULTY_LEVEL,
-      enableAutoSave: true
+      playerColor: config?.playerColor ?? Player.SENTE,
+      aiThinkingTime: config?.aiThinkingTime ?? DEFAULT_AI_THINKING_TIME,
+      aiDifficultyLevel: config?.aiDifficultyLevel ?? DEFAULT_AI_DIFFICULTY_LEVEL,
+      enableAutoSave: config?.enableAutoSave ?? true,
+      enableAutoAI: config?.enableAutoAI ?? true // デフォルトはAI自動実行有効
     }
     
     // 自動保存をdebounce（500ms）
@@ -133,8 +134,8 @@ export class GameManager implements IGameManager {
       await this.saveGame()
     }
     
-    // AIが先手の場合、AIの手を実行
-    if (this.state.aiColor === Player.SENTE) {
+    // AIが先手の場合で、AI自動実行が有効な場合、AIの手を実行
+    if (this.state.aiColor === Player.SENTE && this.config.enableAutoAI) {
       await this.executeAIMove()
     }
     
@@ -182,8 +183,8 @@ export class GameManager implements IGameManager {
         this.saveGameDebounced()
       }
       
-      // ゲームが終了していない場合、AIの手を実行
-      if (result.gameState.status === 'playing') {
+      // ゲームが終了していない場合で、AI自動実行が有効な場合、AIの手を実行
+      if (result.gameState.status === 'playing' && this.config.enableAutoAI) {
         // console.log('🤖 AIの手を実行します...');
         await this.executeAIMove()
       }
@@ -233,8 +234,8 @@ export class GameManager implements IGameManager {
         this.saveGameDebounced()
       }
       
-      // ゲームが終了していない場合、AIの手を実行
-      if (result.gameState.status === 'playing') {
+      // ゲームが終了していない場合で、AI自動実行が有効な場合、AIの手を実行
+      if (result.gameState.status === 'playing' && this.config.enableAutoAI) {
         await this.executeAIMove()
       }
     } else {
@@ -311,9 +312,9 @@ export class GameManager implements IGameManager {
         error: undefined
       })
       
-      // AIの手番の場合、AIの手を実行
+      // AIの手番の場合で、AI自動実行が有効な場合、AIの手を実行
       if (this.state.gameState.currentPlayer === this.state.aiColor &&
-          this.state.gameState.status === 'playing') {
+          this.state.gameState.status === 'playing' && this.config.enableAutoAI) {
         await this.executeAIMove()
       }
       
