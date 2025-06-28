@@ -45,7 +45,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(open http://localhost:3001)",
       "Bash(touch:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }

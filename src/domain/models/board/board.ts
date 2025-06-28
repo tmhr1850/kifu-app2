@@ -49,11 +49,7 @@ export class Board implements IBoard {
    * @returns boolean
    */
   public isValidPosition(position: Position): boolean {
-    // Position クラスのインスタンスなら常に有効
-    if (position instanceof PositionClass) {
-      return true;
-    }
-    // 既存のプレーンオブジェクトの場合の検証
+    // すべてのPositionで統一的な境界チェックを実行
     return (
       position.row >= 0 &&
       position.row < Board.SIZE &&
@@ -91,8 +87,10 @@ export class Board implements IBoard {
    * 盤面のディープコピーを作成する
    * @returns 新しいBoardインスタンス
    */
-  public clone(): IBoard {
-    const newSquares = this.squares.map(row => row.slice());
+  public clone(): Board {
+    const newSquares = this.squares.map(row => 
+      row.map(piece => piece ? piece.clone() : null)
+    );
     return new Board(newSquares);
   }
 
@@ -129,8 +127,8 @@ export class Board implements IBoard {
    * @param move 適用する手（通常の駒移動のみ）
    * @returns 手が適用された新しい盤面
    */
-  public applyMove(move: PieceMove): IBoard {
-    const newBoard = this.clone() as Board;
+  public applyMove(move: PieceMove): Board {
+    const newBoard = this.clone();
     const originalPiece = newBoard.getPiece(move.from);
 
     if (!originalPiece) {
@@ -158,7 +156,7 @@ export class Board implements IBoard {
     return newBoard;
   }
 
-  public static createInitialBoard(): IBoard {
+  public static createInitialBoard(): Board {
     const board = new Board();
 
     const initialPlacement: { piece: PieceType; pos: Position; player: Player }[] = [
@@ -185,8 +183,8 @@ export class Board implements IBoard {
       { piece: PieceType.SILVER, pos: new PositionClass(0, 6), player: Player.GOTE },
       { piece: PieceType.KNIGHT, pos: new PositionClass(0, 7), player: Player.GOTE },
       { piece: PieceType.LANCE, pos: new PositionClass(0, 8), player: Player.GOTE },
-      { piece: PieceType.BISHOP, pos: new PositionClass(1, 1), player: Player.GOTE },
-      { piece: PieceType.ROOK, pos: new PositionClass(1, 7), player: Player.GOTE },
+      { piece: PieceType.ROOK, pos: new PositionClass(1, 1), player: Player.GOTE },
+      { piece: PieceType.BISHOP, pos: new PositionClass(1, 7), player: Player.GOTE },
     ];
 
     // Pawns
