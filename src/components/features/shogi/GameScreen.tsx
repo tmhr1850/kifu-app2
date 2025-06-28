@@ -40,20 +40,14 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
   // 初期化時に保存されたゲームを読み込む
   useEffect(() => {
     const loadSavedGame = async () => {
-      // 🐛 デバッグ：保存されたゲームをクリアして新規ゲーム開始
-      console.log('🔧 DEBUG: Clearing saved game and starting fresh');
-      gameManager.clearSavedGame();
-      const newState = await gameManager.startNewGame();
-      setManagerState(newState);
-      
-      // const savedState = await gameManager.loadGame();
-      // if (savedState) {
-      //   setManagerState(savedState);
-      // } else {
-      //   // 保存されたゲームがない場合は新規ゲームを開始
-      //   const newState = await gameManager.startNewGame();
-      //   setManagerState(newState);
-      // }
+      const savedState = await gameManager.loadGame();
+      if (savedState) {
+        setManagerState(savedState);
+      } else {
+        // 保存されたゲームがない場合は新規ゲームを開始
+        const newState = await gameManager.startNewGame();
+        setManagerState(newState);
+      }
     };
     loadSavedGame();
   }, [gameManager]);
@@ -132,13 +126,6 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       return;
     }
 
-    // デバッグログ追加
-    // console.log('🎯 handleCellClick:', {
-    //   position,
-    //   selectedCell,
-    //   currentPlayer: gameState?.currentPlayer,
-    //   playerColor: managerState?.playerColor
-    // });
 
     // 持ち駒が選択されている場合
     if (selectedCapturedPiece) {
@@ -157,17 +144,12 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
       const from = selectedCell;
       const to = position;
       
-      // console.log('🎮 駒移動試行:', { from, to });
-
       // 成りが可能かチェック
       if (gameManager.canPromote(from, to)) {
-        // console.log('🔄 成り確認中...');
         setPendingMove({ from, to });
       } else {
         // 通常の移動
-        // console.log('🎯 通常移動実行中...');
         const newState = await gameManager.movePiece(from, to);
-        // console.log('🎯 移動結果:', { success: !newState.error, error: newState.error?.message });
         setManagerState(newState);
         if (!newState.error) {
           setErrorMessage(null); // 成功時はエラーメッセージをクリア
@@ -185,12 +167,10 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
     
     // プレイヤーの駒のみ選択可能
     if (piece.player !== managerState?.playerColor) {
-      console.log('❌ 他のプレイヤーの駒です');
       return;
     }
     // 現在の手番でない場合は選択不可
     if (gameState.currentPlayer !== managerState?.playerColor) {
-      console.log('❌ 現在の手番ではありません');
       return;
     }
 
@@ -202,15 +182,9 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
     }
     
     if (uiPos) {
-      console.log('✅ 駒選択:', { 
-        piece: piece.type, 
-        position: uiPos,
-        詳細: `UI座標 row=${uiPos.row}, col=${uiPos.column}`
-      });
       setSelectedCell(uiPos);
       setSelectedCapturedPiece(null);
       const validMoves = gameManager.getLegalMoves(uiPos);
-      console.log('🎯 有効な移動先:', validMoves);
       setHighlightedCells(validMoves);
     }
   }, [gameManager, gameState, boardPieces, managerState?.playerColor, managerState?.isAIThinking]);
