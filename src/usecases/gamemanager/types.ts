@@ -16,7 +16,6 @@ export interface GameManagerConfig {
   aiThinkingTime?: number
   aiDifficultyLevel?: number // 1-10の難易度レベル
   enableAutoSave?: boolean
-  enableAutoAI?: boolean // AI自動実行の制御
 }
 
 export interface SavedGameState {
