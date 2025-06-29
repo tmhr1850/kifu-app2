@@ -5,7 +5,7 @@ import React, { useState, useCallback, useMemo, useEffect, useReducer } from 're
 import { CapturedPiecesUI } from '@/components/ui/CapturedPiecesUI';
 import { CapturedPiece } from '@/components/ui/types';
 import { IPiece } from '@/domain/models/piece/interface';
-import { Player, PieceType } from '@/domain/models/piece/types';
+import { Player, PieceType, Move } from '@/domain/models/piece/types';
 import { useAIWorker } from '@/hooks/useAIWorker';
 import { useGameManager } from '@/hooks/useGameManager';
 import { UIPosition } from '@/types/common';
@@ -78,7 +78,8 @@ const aggregateCapturedPieces = (pieces: IPiece[]): CapturedPiece[] => {
 
 export const GameScreen: React.FC = () => {
   // メモリリーク対策されたGameManagerを使用
-  const gameManager = useGameManager();
+  const { getGameManager } = useGameManager();
+  const gameManager = getGameManager();
   const [managerState, setManagerState] = useState(gameManager.getState());
   const gameState = managerState.gameState;
 
@@ -116,14 +117,36 @@ export const GameScreen: React.FC = () => {
   }, []);
 
   // AIの手を処理
-  const handleAIMove = useCallback(async (move: { from: UIPosition; to: UIPosition } | null) => {
+  const handleAIMove = useCallback(async (move: Move) => {
     if (!move) {
       showError('AIが手を見つけられませんでした');
       return;
     }
 
     try {
-      const result = await gameManager.movePiece(move.from, move.to);
+      let result;
+      if ('from' in move && move.from && move.to) {
+        // PieceMove (駒移動)
+        const fromUI: UIPosition = { 
+          row: move.from.row + 1, 
+          column: move.from.column + 1 
+        };
+        const toUI: UIPosition = { 
+          row: move.to.row + 1, 
+          column: move.to.column + 1 
+        };
+        result = await gameManager.movePiece(fromUI, toUI, move.isPromotion);
+      } else if ('drop' in move && move.drop && move.to) {
+        // DropMove (駒打ち)
+        const toUI: UIPosition = { 
+          row: move.to.row + 1, 
+          column: move.to.column + 1 
+        };
+        result = await gameManager.dropPiece(move.drop, toUI);
+      } else {
+        showError('無効な手です');
+        return;
+      }
       setManagerState(result);
     } catch (error) {
       if (error instanceof Error) {
@@ -135,7 +158,7 @@ export const GameScreen: React.FC = () => {
   // AI Web Workerフック
   const { calculateMove: calculateAIMove, isCalculating } = useAIWorker({
     onMoveCalculated: handleAIMove,
-    onError: (error) => showError(error.message)
+    onError: (error) => showError(typeof error === 'string' ? error : (error as Error).message)
   });
 
   // 初期化とゲーム読み込み
@@ -172,14 +195,14 @@ export const GameScreen: React.FC = () => {
 
   // AIのターンを処理（Web Worker使用）
   useEffect(() => {
-    if (!gameState || gameState.status !== 'playing' || isCalculating()) {
+    if (!gameState || gameState.status !== 'playing' || isCalculating) {
       return;
     }
 
     if (gameState.currentPlayer === managerState.aiColor && !managerState.isAIThinking) {
       const timer = setTimeout(() => {
         const board = gameState.board;
-        calculateAIMove(board, managerState.aiColor, []);
+        calculateAIMove(board, managerState.aiColor, gameState.capturedPieces);
       }, 500);
 
       return () => clearTimeout(timer);
@@ -194,12 +217,12 @@ export const GameScreen: React.FC = () => {
   }, [managerState.error, showError]);
 
   // 持ち駒の集計（最適化版）
-  const capturedSente = useMemo(
+  const capturedSente: CapturedPiece[] = useMemo(
     () => gameState ? aggregateCapturedPieces(gameState.capturedPieces.sente) : [],
     [gameState]
   );
 
-  const capturedGote = useMemo(
+  const capturedGote: CapturedPiece[] = useMemo(
     () => gameState ? aggregateCapturedPieces(gameState.capturedPieces.gote) : [],
     [gameState]
   );
@@ -208,20 +231,9 @@ export const GameScreen: React.FC = () => {
   const boardPieces = useMemo(() => {
     if (!gameState) return [];
     
-    const pieces: { piece: IPiece; position: UIPosition }[] = [];
-    const board = gameState.board;
-    
-    for (let row = 1; row <= 9; row++) {
-      for (let col = 1; col <= 9; col++) {
-        const piece = board.getPiece({ row: row - 1, column: col - 1 });
-        if (piece) {
-          pieces.push({ piece, position: { row, column: col } });
-        }
-      }
-    }
-    
-    return pieces;
-  }, [gameState]);
+    // GameManagerのgetBoardPieces()を使用して統一性を保つ
+    return gameManager.getBoardPieces();
+  }, [gameState, gameManager]);
 
   // ハンドラー関数（メモ化）
   const handleCellClick = useCallback(async (position: UIPosition) => {
@@ -339,7 +351,7 @@ export const GameScreen: React.FC = () => {
             <h1 className="text-3xl font-bold mb-2">将棋ゲーム</h1>
             <div className="flex justify-center items-center gap-4">
               <span className="text-xl font-semibold">{currentPlayerText}</span>
-              {(managerState.isAIThinking || isCalculating()) && (
+              {(managerState.isAIThinking || isCalculating) && (
                 <span className="text-blue-600 font-semibold">AIが考え中...</span>
               )}
               {gameState.isCheck && gameState.status === 'playing' && (
@@ -380,7 +392,7 @@ export const GameScreen: React.FC = () => {
                 selectedCell={uiState.selectedCell}
               />
               {/* AI思考中のオーバーレイ */}
-              {(managerState.isAIThinking || isCalculating()) && (
+              {(managerState.isAIThinking || isCalculating) && (
                 <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center rounded-lg">
                   <div className="bg-white px-4 py-2 rounded-lg shadow-lg">
                     <span className="text-lg font-semibold text-blue-600">AIが考え中...</span>

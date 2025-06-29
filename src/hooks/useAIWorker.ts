@@ -141,4 +141,3 @@ export function useAIWorker({ onMoveCalculated, onError }: UseAIWorkerOptions) {
     isCalculating: isCalculatingRef.current
   }
 }
-}
