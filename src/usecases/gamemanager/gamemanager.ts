@@ -136,8 +136,20 @@ export class GameManager implements IGameManager {
 
   constructor(aiEngine?: IAIEngine, config?: GameManagerConfig) {
     this.gameUseCase = new GameUseCase()
-    // ブラウザ環境ではWebWorkerAI、サーバー環境ではSimpleAIを使用
-    this.aiEngine = aiEngine || (typeof window !== 'undefined' ? new WebWorkerAI() : new SimpleAI())
+    
+    // AI エンジンを安全に初期化
+    if (aiEngine) {
+      this.aiEngine = aiEngine
+    } else {
+      try {
+        // ブラウザ環境ではWebWorkerAI、サーバー環境ではSimpleAIを使用
+        this.aiEngine = typeof window !== 'undefined' ? new WebWorkerAI() : new SimpleAI()
+      } catch (error) {
+        Logger.error('AI engine initialization failed, falling back to SimpleAI', error)
+        // フォールバック: AIエンジンの初期化に失敗した場合はSimpleAIを使用
+        this.aiEngine = new SimpleAI()
+      }
+    }
     
     const initialGameState = this.gameUseCase.startNewGame()
     
@@ -157,10 +169,15 @@ export class GameManager implements IGameManager {
     }
     
     // 自動保存をdebounce（メモリリーク対策版）
-    this.saveGameDebounced = new DebouncedFunction(
-      () => this.saveGame().catch((error) => Logger.error('Auto save failed', error)),
-      GAME_MANAGER_CONFIG.AUTO_SAVE_DEBOUNCE_DELAY
-    );
+    try {
+      this.saveGameDebounced = new DebouncedFunction(
+        () => this.saveGame().catch((error) => Logger.error('Auto save failed', error)),
+        GAME_MANAGER_CONFIG.AUTO_SAVE_DEBOUNCE_DELAY
+      );
+    } catch (error) {
+      Logger.error('DebouncedFunction initialization failed', error)
+      this.saveGameDebounced = null
+    }
   }
 
   // リソースのクリーンアップメソッド

@@ -13,7 +13,12 @@ export function useGameManager() {
   // GameManagerインスタンスを取得（遅延初期化）
   const getGameManager = useCallback(() => {
     if (!gameManagerRef.current) {
-      gameManagerRef.current = new GameManager()
+      try {
+        gameManagerRef.current = new GameManager()
+      } catch (error) {
+        console.error('GameManager initialization failed:', error)
+        throw error
+      }
     }
     return gameManagerRef.current
   }, [])
@@ -22,16 +27,26 @@ export function useGameManager() {
   const resetGameManager = useCallback((config?: GameManagerConfig) => {
     // 既存のGameManagerがあればクリーンアップ
     if (gameManagerRef.current) {
-      if ('dispose' in gameManagerRef.current && typeof gameManagerRef.current.dispose === 'function') {
-        gameManagerRef.current.dispose()
+      try {
+        if ('dispose' in gameManagerRef.current && typeof gameManagerRef.current.dispose === 'function') {
+          gameManagerRef.current.dispose()
+        }
+      } catch (error) {
+        console.error('GameManager dispose failed:', error)
       }
+      gameManagerRef.current = null
     }
     
     // 新しいGameManagerを作成
-    gameManagerRef.current = new GameManager()
-    
-    if (config) {
-      gameManagerRef.current.startNewGame(config)
+    try {
+      gameManagerRef.current = new GameManager(undefined, config)
+      
+      if (config) {
+        gameManagerRef.current.startNewGame(config)
+      }
+    } catch (error) {
+      console.error('GameManager reset failed:', error)
+      throw error
     }
     
     return gameManagerRef.current
