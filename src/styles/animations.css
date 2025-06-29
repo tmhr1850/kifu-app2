@@ -41,26 +41,50 @@
   }
 }
 
-/* アニメーションクラス */
+/* アニメーションクラス（GPU最適化） */
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: opacity;
 }
 
 .animate-slide-up {
   animation: slideUp 0.3s ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-scale-in {
   animation: scaleIn 0.2s ease-out;
+  will-change: opacity, transform;
 }
 
-/* トランジション改善 */
+/* トランジション改善（GPU最適化） */
 .transition-smooth {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: auto;
+}
+
+/* GPU最適化ヘルパークラス */
+.gpu-optimized {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.will-change-auto {
+  will-change: auto;
 }
 
 /* フォーカス効果 */
@@ -68,9 +92,38 @@
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2;
 }
 
+/* 将棋ゲーム特有の最適化 */
+.board-cell-optimized {
+  transform: translateZ(0);
+  will-change: background-color, box-shadow;
+  contain: layout style paint;
+}
+
+.piece-animation-optimized {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.highlight-transition {
+  transition: background-color 0.15s ease-out;
+  will-change: background-color;
+}
+
+/* レイアウトシフト防止 */
+.prevent-layout-shift {
+  contain: layout;
+}
+
 /* モバイル最適化 */
 @media (max-width: 640px) {
   .touch-action-manipulation {
     touch-action: manipulation;
+  }
+  
+  /* モバイルでのアニメーション軽量化 */
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-scale-in {
+    animation-duration: 0.2s;
   }
 }

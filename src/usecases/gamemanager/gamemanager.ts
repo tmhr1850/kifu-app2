@@ -259,7 +259,7 @@ export class GameManager implements IGameManager {
       }
     } else {
       this.setState({
-        error: result.error
+        error: result.error ? this.normalizeError(result.error) : undefined
       })
     }
     
@@ -305,7 +305,7 @@ export class GameManager implements IGameManager {
       }
     } else {
       this.setState({
-        error: result.error
+        error: result.error ? this.normalizeError(result.error) : undefined
       })
     }
     
@@ -481,7 +481,7 @@ export class GameManager implements IGameManager {
       } else {
         this.setState({
           isAIThinking: false,
-          error: result?.error
+          error: result?.error ? this.normalizeError(result.error) : undefined
         })
       }
     } catch (error) {
