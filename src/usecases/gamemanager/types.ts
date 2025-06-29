@@ -1,3 +1,4 @@
+import { IPiece } from '@/domain/models/piece/interface'
 import { Player, PieceType } from '@/domain/models/piece/types'
 import { UIPosition } from '@/types/common'
 import { GameState } from '@/usecases/game/types'
@@ -15,6 +16,7 @@ export interface GameManagerConfig {
   aiThinkingTime?: number
   aiDifficultyLevel?: number // 1-10の難易度レベル
   enableAutoSave?: boolean
+  enableAutoAI?: boolean // AI自動実行の制御
 }
 
 export interface SavedGameState {
@@ -29,6 +31,9 @@ export interface IGameManager {
   dropPiece(pieceType: PieceType, to: UIPosition): Promise<GameManagerState>
   resign(player: Player): Promise<GameManagerState>
   getState(): GameManagerState
+  getUIBoardState(): { piece: IPiece; position: UIPosition }[]
+  getBoardPiecesWithUIPositions(): { piece: IPiece; position: UIPosition }[] // 後方互換性のため
+  getBoardPieces(): { piece: IPiece; position: UIPosition }[] // 後方互換性のため
   getLegalMoves(from?: UIPosition): UIPosition[]
   getLegalDropPositions(pieceType: PieceType): UIPosition[]
   canPromote(from: UIPosition, to: UIPosition): boolean

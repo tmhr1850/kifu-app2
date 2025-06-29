@@ -21,6 +21,7 @@ export class Knight extends Piece {
       return [];
     }
     const moves: Position[] = [];
+    // 先手は敵陣に向かう（row減少）、後手は先手陣に向かう（row増加）
     const forward = this.player === Player.SENTE ? -1 : 1;
     const newPositions: Position[] = [
       { row: this.position.row + 2 * forward, column: this.position.column + 1 },

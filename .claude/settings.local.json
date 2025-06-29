@@ -28,7 +28,27 @@
       "Bash(timeout 90 npm run build)",
       "Bash(git checkout:*)",
       "Bash(gh run list:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(git restore:*)",
+      "Bash(rm:*)",
+      "Bash(npm run test:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(curl:*)",
+      "Bash(npx playwright show-trace:*)",
+      "Bash(git reset:*)",
+      "Bash(gh pr create:*)",
+      "Bash(rg:*)",
+      "Bash(gh issue close:*)",
+      "Bash(pkill:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(open http://localhost:3001)",
+      "Bash(touch:*)",
+      "Bash(true)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm run typecheck:*)"
     ],
     "deny": []
   }

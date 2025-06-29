@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest src",
-    "test:unit": "vitest src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:unit": "vitest",
     "test:e2e": "playwright test"
   },
   "dependencies": {

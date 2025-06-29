@@ -1,30 +1,35 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom'
 
-// Web Worker APIのモック
+// Worker mock for testing environment
 class WorkerMock {
   constructor(stringUrl) {
     this.url = stringUrl;
     this.onmessage = null;
+    this.onerror = null;
   }
 
-  postMessage(msg) {
-    // テスト環境では何もしない
-    // 必要に応じて、setTimeout で非同期的に onmessage を呼び出すことも可能
-    if (this.onmessage) {
-      setTimeout(() => {
+  postMessage(message) {
+    // Simulate async AI calculation
+    setTimeout(() => {
+      if (this.onmessage) {
+        // Return a simple mock move
         this.onmessage({
           data: {
-            type: 'MOVE_CALCULATED',
-            move: null
+            type: 'MOVE_RESULT',
+            move: {
+              from: { row: 6, column: 4 },
+              to: { row: 5, column: 4 },
+              isPromotion: false
+            }
           }
         });
-      }, 0);
-    }
+      }
+    }, 100);
   }
 
   terminate() {
-    // クリーンアップ処理
+    // Mock terminate
   }
 
   addEventListener() {

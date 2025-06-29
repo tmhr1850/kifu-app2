@@ -6,99 +6,139 @@
 - heading "後手の持ち駒" [level=2]
 - status: 持ち駒なし
 - grid:
-  - text: 9 8 7 6 5 4 3 2 1 一
-  - button "後手の香": 香
-  - button "後手の桂": 桂
-  - button "後手の銀": 銀
-  - button "後手の金": 金
-  - button "後手の王": 王
-  - button "後手の金": 金
-  - button "後手の銀": 銀
-  - button "後手の桂": 桂
-  - button "後手の香": 香
-  - text: 二
-  - button "二9"
-  - button "後手の飛": 飛
-  - button "二7"
-  - button "二6"
-  - button "二5"
-  - button "二4"
-  - button "二3"
-  - button "後手の角": 角
-  - button "二1"
-  - text: 三
-  - button "後手の歩": 歩
-  - button "後手の歩": 歩
-  - button "後手の歩": 歩
-  - button "後手の歩": 歩
-  - button "後手の歩": 歩
-  - button "後手の歩": 歩
-  - button "後手の歩": 歩
-  - button "後手の歩": 歩
-  - button "後手の歩": 歩
-  - text: 四
-  - button "四9"
-  - button "四8"
-  - button "四7"
-  - button "四6"
-  - button "四5"
-  - button "四4"
-  - button "四3"
-  - button "四2"
-  - button "四1"
-  - text: 五
-  - button "五9"
-  - button "五8"
-  - button "五7"
-  - button "五6"
-  - button "五5"
-  - button "五4"
-  - button "五3"
-  - button "五2"
-  - button "五1"
-  - text: 六
-  - button "六9"
-  - button "六8"
-  - button "六7"
-  - button "六6"
-  - button "六5"
-  - button "六4"
-  - button "六3"
-  - button "六2"
-  - button "六1"
-  - text: 七
-  - button "先手の歩": 歩
-  - button "先手の歩": 歩
-  - button "先手の歩": 歩
-  - button "先手の歩": 歩
-  - button "先手の歩": 歩
-  - button "先手の歩": 歩
-  - button "先手の歩": 歩
-  - button "先手の歩": 歩
-  - button "先手の歩": 歩
-  - text: 八
-  - button "八9"
-  - button "先手の角": 角
-  - button "八7"
-  - button "八6"
-  - button "八5"
-  - button "八4"
-  - button "八3"
-  - button "先手の飛": 飛
-  - button "八1"
-  - text: 九
-  - button "先手の香": 香
-  - button "先手の桂": 桂
-  - button "先手の銀": 銀
-  - button "先手の金": 金
-  - button "先手の王": 王
-  - button "先手の金": 金
-  - button "先手の銀": 銀
-  - button "先手の桂": 桂
-  - button "先手の香": 香
+  - grid "将棋盤":
+    - text: 9 8 7 6 5 4 3 2 1 一
+    - gridcell "一9 - 後手のLANCE":
+      - button "後手の香": 香
+    - gridcell "一8 - 後手のKNIGHT":
+      - button "後手の桂": 桂
+    - gridcell "一7 - 後手のSILVER":
+      - button "後手の銀": 銀
+    - gridcell "一6 - 後手のGOLD":
+      - button "後手の金": 金
+    - gridcell "一5 - 後手のKING":
+      - button "後手の王": 王
+    - gridcell "一4 - 後手のGOLD":
+      - button "後手の金": 金
+    - gridcell "一3 - 後手のSILVER":
+      - button "後手の銀": 銀
+    - gridcell "一2 - 後手のKNIGHT":
+      - button "後手の桂": 桂
+    - gridcell "一1 - 後手のLANCE":
+      - button "後手の香": 香
+    - text: 二
+    - gridcell "二9 - 空のマス"
+    - gridcell "二8 - 後手のROOK":
+      - button "後手の飛": 飛
+    - gridcell "二7 - 空のマス"
+    - gridcell "二6 - 空のマス"
+    - gridcell "二5 - 空のマス"
+    - gridcell "二4 - 空のマス"
+    - gridcell "二3 - 空のマス"
+    - gridcell "二2 - 後手のBISHOP":
+      - button "後手の角": 角
+    - gridcell "二1 - 空のマス"
+    - text: 三
+    - gridcell "三9 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - gridcell "三8 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - gridcell "三7 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - gridcell "三6 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - gridcell "三5 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - gridcell "三4 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - gridcell "三3 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - gridcell "三2 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - gridcell "三1 - 後手のPAWN":
+      - button "後手の歩": 歩
+    - text: 四
+    - gridcell "四9 - 空のマス"
+    - gridcell "四8 - 空のマス"
+    - gridcell "四7 - 空のマス"
+    - gridcell "四6 - 空のマス"
+    - gridcell "四5 - 空のマス"
+    - gridcell "四4 - 空のマス"
+    - gridcell "四3 - 空のマス"
+    - gridcell "四2 - 空のマス"
+    - gridcell "四1 - 空のマス"
+    - text: 五
+    - gridcell "五9 - 空のマス"
+    - gridcell "五8 - 空のマス"
+    - gridcell "五7 - 空のマス"
+    - gridcell "五6 - 空のマス"
+    - gridcell "五5 - 空のマス"
+    - gridcell "五4 - 空のマス"
+    - gridcell "五3 - 空のマス"
+    - gridcell "五2 - 空のマス"
+    - gridcell "五1 - 空のマス"
+    - text: 六
+    - gridcell "六9 - 空のマス"
+    - gridcell "六8 - 空のマス"
+    - gridcell "六7 - 空のマス"
+    - gridcell "六6 - 空のマス"
+    - gridcell "六5 - 空のマス"
+    - gridcell "六4 - 空のマス"
+    - gridcell "六3 - 空のマス"
+    - gridcell "六2 - 空のマス"
+    - gridcell "六1 - 空のマス"
+    - text: 七
+    - gridcell "七9 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - gridcell "七8 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - gridcell "七7 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - gridcell "七6 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - gridcell "七5 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - gridcell "七4 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - gridcell "七3 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - gridcell "七2 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - gridcell "七1 - 先手のPAWN":
+      - button "先手の歩": 歩
+    - text: 八
+    - gridcell "八9 - 空のマス"
+    - gridcell "八8 - 先手のBISHOP":
+      - button "先手の角": 角
+    - gridcell "八7 - 空のマス"
+    - gridcell "八6 - 空のマス"
+    - gridcell "八5 - 空のマス"
+    - gridcell "八4 - 空のマス"
+    - gridcell "八3 - 空のマス"
+    - gridcell "八2 - 先手のROOK":
+      - button "先手の飛": 飛
+    - gridcell "八1 - 空のマス"
+    - text: 九
+    - gridcell "九9 - 先手のLANCE":
+      - button "先手の香": 香
+    - gridcell "九8 - 先手のKNIGHT":
+      - button "先手の桂": 桂
+    - gridcell "九7 - 先手のSILVER":
+      - button "先手の銀": 銀
+    - gridcell "九6 - 先手のGOLD":
+      - button "先手の金": 金
+    - gridcell "九5 - 先手のKING":
+      - button "先手の王": 王
+    - gridcell "九4 - 先手のGOLD":
+      - button "先手の金": 金
+    - gridcell "九3 - 先手のSILVER":
+      - button "先手の銀": 銀
+    - gridcell "九2 - 先手のKNIGHT":
+      - button "先手の桂": 桂
+    - gridcell "九1 - 先手のLANCE":
+      - button "先手の香": 香
 - heading "先手の持ち駒" [level=2]
 - status: 持ち駒なし
 - button "新規対局"
 - button "投了"
-- alert
 ```

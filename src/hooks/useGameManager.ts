@@ -1,33 +1,59 @@
-import { useEffect, useRef } from 'react';
+import { useRef, useEffect, useCallback } from 'react'
 
-import { IAIEngine } from '@/domain/services/ai-engine';
-import { GameManager } from '@/usecases/gamemanager/gamemanager';
+import { GameManager } from '@/usecases/gamemanager/gamemanager'
+import { GameManagerConfig } from '@/usecases/gamemanager/types'
 
 /**
- * GameManagerのライフサイクルを管理するカスタムフック
- * メモリリークを防ぐため、コンポーネントのアンマウント時に
- * 適切にクリーンアップを行う
+ * GameManagerインスタンスを管理するカスタムフック
+ * リソースの適切なライフサイクル管理を提供
  */
-export function useGameManager(aiEngine?: IAIEngine): GameManager {
-  const managerRef = useRef<GameManager | null>(null);
+export function useGameManager() {
+  const gameManagerRef = useRef<GameManager | null>(null)
 
-  // GameManagerのインスタンスを作成（初回のみ）
-  if (!managerRef.current) {
-    managerRef.current = new GameManager(aiEngine);
-  }
+  // GameManagerインスタンスを取得（遅延初期化）
+  const getGameManager = useCallback(() => {
+    if (!gameManagerRef.current) {
+      gameManagerRef.current = new GameManager()
+    }
+    return gameManagerRef.current
+  }, [])
 
-  // クリーンアップ処理
-  useEffect(() => {
-    const manager = managerRef.current;
-
-    return () => {
-      // コンポーネントのアンマウント時にGameManagerをdispose
-      if (manager) {
-        manager.dispose();
-        managerRef.current = null;
+  // GameManagerの再作成
+  const resetGameManager = useCallback((config?: GameManagerConfig) => {
+    // 既存のGameManagerがあればクリーンアップ
+    if (gameManagerRef.current) {
+      if ('dispose' in gameManagerRef.current && typeof gameManagerRef.current.dispose === 'function') {
+        gameManagerRef.current.dispose()
       }
-    };
-  }, []);
+    }
+    
+    // 新しいGameManagerを作成
+    gameManagerRef.current = new GameManager()
+    
+    if (config) {
+      gameManagerRef.current.startNewGame(config)
+    }
+    
+    return gameManagerRef.current
+  }, [])
 
-  return managerRef.current;
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      // コンポーネントがアンマウントされる際のクリーンアップ
+      if (gameManagerRef.current) {
+        // WebWorkerなどのリソースを適切にクリーンアップ
+        if ('dispose' in gameManagerRef.current && typeof gameManagerRef.current.dispose === 'function') {
+          gameManagerRef.current.dispose()
+        }
+        gameManagerRef.current = null
+      }
+    }
+  }, [])
+
+  return {
+    getGameManager,
+    resetGameManager
+  }
+}
 }
