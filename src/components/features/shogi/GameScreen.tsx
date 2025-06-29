@@ -274,12 +274,24 @@ export const GameScreen: React.FC = () => {
           showError(error.message);
         }
       }
+    } else if (uiState.selectedCapturedPiece && !clickedPiece) {
+      // 持ち駒が選択されている場合の処理
+      try {
+        const result = await gameManager.dropPiece(uiState.selectedCapturedPiece, position);
+        setManagerState(result);
+        dispatch({ type: 'SELECT_CAPTURED_PIECE', piece: null });
+        dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: [] });
+      } catch (error) {
+        if (error instanceof Error) {
+          showError(error.message);
+        }
+      }
     } else if (clickedPiece && clickedPiece.player === gameState.currentPlayer) {
       dispatch({ type: 'SELECT_CELL', cell: position });
       const validMoves = gameManager.getLegalMoves(position);
       dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: validMoves });
     }
-  }, [gameState, gameManager, managerState.isAIThinking, uiState.selectedCell, showError]);
+  }, [gameState, gameManager, managerState.isAIThinking, uiState.selectedCell, uiState.selectedCapturedPiece, showError]);
 
   const handlePieceClick = useCallback((piece: IPiece) => {
     if (!piece.position) return;
