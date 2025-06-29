@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo, useEffect, useReducer } from 're
 
 import { CapturedPiecesUI } from '@/components/ui/CapturedPiecesUI';
 import { CapturedPiece } from '@/components/ui/types';
+import { UI_CONFIG } from '@/config/gameConfig';
 import { IPiece } from '@/domain/models/piece/interface';
 import { Player, PieceType, Move } from '@/domain/models/piece/types';
 import { useAIWorker } from '@/hooks/useAIWorker';
@@ -94,19 +95,19 @@ export const GameScreen: React.FC = () => {
     errorTimeoutId: null
   });
 
-  // エラー表示関数
+  // エラー表示関数（設定ファイルから時間取得）
   const showError = useCallback((message: string) => {
-    let displayTime = 3000;
+    let displayTime = UI_CONFIG.DEFAULT_ERROR_DISPLAY_TIME;
     
     if (message.includes('チェックメイト') || 
         message.includes('投了') ||
         message.includes('ステイルメイト')) {
-      displayTime = 10000;
+      displayTime = UI_CONFIG.CRITICAL_ERROR_DISPLAY_TIME;
     } else if (message.includes('チェック')) {
-      displayTime = 5000;
+      displayTime = UI_CONFIG.WARNING_DISPLAY_TIME;
     } else if (message.includes('移動できません') || 
                message.includes('その手は指せません')) {
-      displayTime = 2000;
+      displayTime = UI_CONFIG.QUICK_ERROR_DISPLAY_TIME;
     }
     
     const timeoutId = setTimeout(() => {
@@ -203,7 +204,7 @@ export const GameScreen: React.FC = () => {
       const timer = setTimeout(() => {
         const board = gameState.board;
         calculateAIMove(board, managerState.aiColor, gameState.capturedPieces);
-      }, 500);
+      }, UI_CONFIG.AI_MOVE_DELAY);
 
       return () => clearTimeout(timer);
     }
@@ -215,6 +216,14 @@ export const GameScreen: React.FC = () => {
       showError(managerState.error.message);
     }
   }, [managerState.error, showError]);
+
+  // コンポーネントアンマウント時のクリーンアップ（メモリリーク対策）
+  useEffect(() => {
+    return () => {
+      // エラータイマーをクリア
+      dispatch({ type: 'CLEAR_ERROR' });
+    };
+  }, []);
 
   // 持ち駒の集計（最適化版）
   const capturedSente: CapturedPiece[] = useMemo(

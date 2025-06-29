@@ -16,10 +16,10 @@ interface BoardUIProps {
   pieces?: { piece: IPiece; position: UIPosition }[];
 }
 
-// 高速な位置キー生成関数
-const getPositionKey = (row: number, col: number): string => `${row}-${col}`;
+// 高速な位置キー生成関数（数値ベース）
+const getPositionKey = (row: number, col: number): number => row * 10 + col;
 
-// メモ化されたセル選択状態チェック
+// メモ化されたセル選択状態チェック（数値キー使用）
 const createCellChecker = (cells: UIPosition[]) => {
   const cellSet = new Set(cells.map(cell => getPositionKey(cell.row, cell.column)));
   return (row: number, col: number) => cellSet.has(getPositionKey(row, col));
@@ -29,7 +29,7 @@ const createCellChecker = (cells: UIPosition[]) => {
 const BoardRow = memo<{
   rowIndex: number;
   size: number;
-  piecesMap: Map<string, IPiece>;
+  piecesMap: Map<number, IPiece>;
   selectedCell: UIPosition | null;
   highlightedChecker: (row: number, col: number) => boolean;
   focusedCell: UIPosition;
@@ -100,8 +100,9 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
 }) => {
   // キーボードナビゲーション用のフォーカス位置（初期値は盤面の中央）
   const [focusedCell, setFocusedCell] = useState<UIPosition>({ row: Math.floor(size / 2) + 1, column: Math.floor(size / 2) + 1 });
-  const cellRefs = useRef<Array<Array<HTMLDivElement | null>>>(
-    Array(size).fill(null).map(() => Array(size).fill(null))
+  // より厳密な型定義でメモリ効率も改善
+  const cellRefs = useRef<(HTMLDivElement | null)[][]>(
+    Array.from({ length: size }, () => Array.from({ length: size }, () => null))
   );
 
   useEffect(() => {
@@ -113,9 +114,9 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
     cellRefs.current[rowIndex]?.[colIndex]?.focus();
   }, [focusedCell, size]);
 
-  // 最適化された駒の位置マップ生成
+  // 最適化された駒の位置マップ生成（数値キー使用）
   const piecesMap = useMemo(() => {
-    const map = new Map<string, IPiece>();
+    const map = new Map<number, IPiece>();
     for (const { piece, position } of pieces) {
       map.set(getPositionKey(position.row, position.column), piece);
     }
@@ -155,7 +156,7 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
       case ' ': // Space key
         event.preventDefault();
         // フォーカス位置の駒または空のセルをクリック
-        const piece = piecesMap.get(`${position.row}-${position.column}`);
+        const piece = piecesMap.get(getPositionKey(position.row, position.column));
         if (piece) {
           onPieceClick?.(piece, position);
         } else {

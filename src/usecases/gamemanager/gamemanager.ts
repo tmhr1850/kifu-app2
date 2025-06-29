@@ -1,3 +1,4 @@
+import { GAME_MANAGER_CONFIG } from '@/config/gameConfig'
 import { Player, PieceType, Move, DropMove } from '@/domain/models/piece/types'
 import { IAIEngine } from '@/domain/services/ai-engine'
 import { UIPosition } from '@/types/common'
@@ -11,11 +12,6 @@ import {
   SavedGameState, 
   IGameManager 
 } from './types'
-
-const STORAGE_KEY = 'kifu-app-game-state'
-const DEFAULT_AI_THINKING_TIME = 1000
-const DEFAULT_AI_DIFFICULTY_LEVEL = 5
-const AUTO_SAVE_DEBOUNCE_DELAY = 500
 
 // 型ガード関数
 function isDropMove(move: Move): move is DropMove {
@@ -127,6 +123,17 @@ export class GameManager implements IGameManager {
   private disposed = false
   private subscribers: ((state: GameManagerState) => void)[] = []
 
+  // エラーハンドリングの一貫性を保つヘルパーメソッド
+  private normalizeError(error: unknown, defaultMessage: string = 'エラーが発生しました'): Error {
+    if (error instanceof Error) {
+      return error;
+    }
+    if (typeof error === 'string') {
+      return new Error(error);
+    }
+    return new Error(defaultMessage);
+  }
+
   constructor(aiEngine?: IAIEngine, config?: GameManagerConfig) {
     this.gameUseCase = new GameUseCase()
     // ブラウザ環境ではWebWorkerAI、サーバー環境ではSimpleAIを使用
@@ -143,8 +150,8 @@ export class GameManager implements IGameManager {
     
     this.config = {
       playerColor: config?.playerColor ?? Player.SENTE,
-      aiThinkingTime: config?.aiThinkingTime ?? DEFAULT_AI_THINKING_TIME,
-      aiDifficultyLevel: config?.aiDifficultyLevel ?? DEFAULT_AI_DIFFICULTY_LEVEL,
+      aiThinkingTime: config?.aiThinkingTime ?? GAME_MANAGER_CONFIG.DEFAULT_AI_THINKING_TIME,
+      aiDifficultyLevel: config?.aiDifficultyLevel ?? GAME_MANAGER_CONFIG.DEFAULT_AI_DIFFICULTY_LEVEL,
       enableAutoSave: config?.enableAutoSave ?? true,
       enableAutoAI: config?.enableAutoAI ?? true // デフォルトはAI自動実行有効
     }
@@ -152,7 +159,7 @@ export class GameManager implements IGameManager {
     // 自動保存をdebounce（メモリリーク対策版）
     this.saveGameDebounced = new DebouncedFunction(
       () => this.saveGame().catch((error) => Logger.error('Auto save failed', error)),
-      AUTO_SAVE_DEBOUNCE_DELAY
+      GAME_MANAGER_CONFIG.AUTO_SAVE_DEBOUNCE_DELAY
     );
   }
 
@@ -360,7 +367,7 @@ export class GameManager implements IGameManager {
     }
 
     try {
-      const savedData = await AsyncStorage.getItem(STORAGE_KEY)
+      const savedData = await AsyncStorage.getItem(GAME_MANAGER_CONFIG.STORAGE_KEY)
       if (!savedData) {
         return null
       }
@@ -401,14 +408,14 @@ export class GameManager implements IGameManager {
         timestamp: new Date()
       }
       
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(saveData))
+      await AsyncStorage.setItem(GAME_MANAGER_CONFIG.STORAGE_KEY, JSON.stringify(saveData))
     } catch (error) {
       Logger.error('Failed to save game', error)
     }
   }
 
   clearSavedGame(): void {
-    AsyncStorage.removeItem(STORAGE_KEY).catch(error => 
+    AsyncStorage.removeItem(GAME_MANAGER_CONFIG.STORAGE_KEY).catch(error => 
       Logger.error('Failed to clear saved game', error)
     );
   }
@@ -481,7 +488,7 @@ export class GameManager implements IGameManager {
       Logger.error('AI move failed', error)
       this.setState({
         isAIThinking: false,
-        error: error instanceof Error ? error : new Error('AI思考中にエラーが発生しました')
+        error: this.normalizeError(error, 'AI思考中にエラーが発生しました')
       })
     }
   }
