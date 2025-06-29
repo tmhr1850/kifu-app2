@@ -119,7 +119,7 @@ export class GameManager implements IGameManager {
   private aiEngine: IAIEngine
   private state: GameManagerState
   private config: Required<GameManagerConfig>
-  private saveGameDebounced: DebouncedFunction
+  private saveGameDebounced: DebouncedFunction | null = null
   private disposed = false
   private subscribers: ((state: GameManagerState) => void)[] = []
 
@@ -167,7 +167,10 @@ export class GameManager implements IGameManager {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.saveGameDebounced.dispose();
+    if (this.saveGameDebounced) {
+      this.saveGameDebounced.dispose();
+      this.saveGameDebounced = null;
+    }
     if (this.aiEngine && 'dispose' in this.aiEngine && typeof this.aiEngine.dispose === 'function') {
       this.aiEngine.dispose();
     }
@@ -249,7 +252,7 @@ export class GameManager implements IGameManager {
         error: undefined
       })
       
-      if (this.config.enableAutoSave) {
+      if (this.config.enableAutoSave && this.saveGameDebounced) {
         this.saveGameDebounced.call()
       }
       
@@ -295,7 +298,7 @@ export class GameManager implements IGameManager {
         error: undefined
       })
       
-      if (this.config.enableAutoSave) {
+      if (this.config.enableAutoSave && this.saveGameDebounced) {
         this.saveGameDebounced.call()
       }
       
@@ -475,7 +478,7 @@ export class GameManager implements IGameManager {
           error: undefined
         })
         
-        if (this.config.enableAutoSave) {
+        if (this.config.enableAutoSave && this.saveGameDebounced) {
           this.saveGameDebounced.call()
         }
       } else {
