@@ -41,7 +41,7 @@ export class GameUseCase implements IGameUseCase {
   private _initializeState(): void {
     const board = Board.createInitialBoard()
     this.gameState = {
-      board: board as Board,
+      board: board,
       currentPlayer: Player.SENTE,
       history: [],
       capturedPieces: {
@@ -205,7 +205,7 @@ export class GameUseCase implements IGameUseCase {
 
     const newGameState: GameState = {
       ...currentGameState,
-      board: newBoard as Board,
+      board: newBoard,
       currentPlayer: currentGameState.currentPlayer === Player.SENTE ? Player.GOTE : Player.SENTE,
       history: [...currentGameState.history, gameMove],
       capturedPieces: newCapturedPieces,
@@ -266,7 +266,7 @@ export class GameUseCase implements IGameUseCase {
       [currentGameState.currentPlayer]: newCapturedList,
     }
 
-    const newBoard = currentGameState.board.clone() as Board
+    const newBoard = currentGameState.board.clone()
     newBoard.setPiece(to, pieceToDrop.clone(to))
 
     const gameMove: GameMove = {

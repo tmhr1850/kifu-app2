@@ -52,10 +52,12 @@ class MockBoard implements IBoard {
 
   applyMove(move: Move): IBoard {
     const newBoard = this.clone();
-    const piece = newBoard.getPiece(move.from);
-    if (piece) {
-      newBoard.setPiece(move.from, null);
-      newBoard.setPiece(move.to, piece.clone(move.to));
+    if ('from' in move) {
+      const piece = newBoard.getPiece(move.from);
+      if (piece) {
+        newBoard.setPiece(move.from, null);
+        newBoard.setPiece(move.to, piece.clone(move.to));
+      }
     }
     return newBoard;
   }

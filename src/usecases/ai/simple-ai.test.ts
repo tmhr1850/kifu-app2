@@ -56,11 +56,13 @@ class MockBoard implements IBoard {
 
   applyMove(move: Move): IBoard {
     const cloned = this.clone();
-    const piece = this.getPiece(move.from);
-    if (piece) {
-      cloned.setPiece(move.from, null);
-      const movedPiece = piece.clone(move.to);
-      cloned.setPiece(move.to, movedPiece);
+    if ('from' in move) {
+      const piece = this.getPiece(move.from);
+      if (piece) {
+        cloned.setPiece(move.from, null);
+        const movedPiece = piece.clone(move.to);
+        cloned.setPiece(move.to, movedPiece);
+      }
     }
     return cloned;
   }
@@ -97,6 +99,10 @@ class MockPiece implements IPiece {
 
   setValidMoves(moves: Position[]): void {
     this.validMoves = moves;
+  }
+
+  isPromoted(): boolean {
+    return false;
   }
 }
 
