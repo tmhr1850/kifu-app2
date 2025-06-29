@@ -192,6 +192,46 @@ describe('GameUseCase', () => {
       expect(result.success).toBe(false)
       expect(result.error?.message).toContain('その駒を持っていません')
     })
+
+    it('駒を取った時に持ち駒に正しく追加される', () => {
+      // 角交換のシナリオで駒取りをテスト
+      gameUseCase.movePiece({ row: 7, column: 7 }, { row: 6, column: 7 }) // 先手7六歩
+      gameUseCase.movePiece({ row: 3, column: 3 }, { row: 4, column: 3 }) // 後手3四歩
+      
+      // 先手角で後手の駒を取る
+      const result = gameUseCase.movePiece({ row: 8, column: 8 }, { row: 2, column: 2 }) // 先手角で飛車取り
+      expect(result.success).toBe(true)
+      
+      if (result.success) {
+        const state = result.gameState!
+        // 先手の持ち駒に飛車が追加されているか確認
+        expect(state.capturedPieces.sente).toHaveLength(1)
+        expect(state.capturedPieces.sente[0].type).toBe(PieceType.ROOK)
+        expect(state.capturedPieces.sente[0].player).toBe(Player.SENTE)
+      }
+    })
+
+    it('歩同士の突き合いで持ち駒に正しく追加される', () => {
+      // 新しいゲームで歩同士の突き合いをテスト
+      const newGameUseCase = new GameUseCase()
+      newGameUseCase.startNewGame()
+      
+      newGameUseCase.movePiece({ row: 7, column: 5 }, { row: 6, column: 5 }) // 先手5六歩
+      newGameUseCase.movePiece({ row: 3, column: 5 }, { row: 4, column: 5 }) // 後手5四歩
+      newGameUseCase.movePiece({ row: 6, column: 5 }, { row: 5, column: 5 }) // 先手5五歩
+      
+      // 後手が先手の歩を取る
+      const result = newGameUseCase.movePiece({ row: 4, column: 5 }, { row: 5, column: 5 }) // 後手5五同歩
+      expect(result.success).toBe(true)
+      
+      if (result.success) {
+        const state = result.gameState!
+        // 後手の持ち駒に歩が追加されているか確認
+        expect(state.capturedPieces.gote).toHaveLength(1)
+        expect(state.capturedPieces.gote[0].type).toBe(PieceType.PAWN)
+        expect(state.capturedPieces.gote[0].player).toBe(Player.GOTE)
+      }
+    })
   })
 
   describe('gameStatus', () => {

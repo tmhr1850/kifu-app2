@@ -186,7 +186,7 @@ export class GameUseCase implements IGameUseCase {
       const newCapturedList = [...capturedList, newCapturedPiece]
       newCapturedPieces = {
         ...currentGameState.capturedPieces,
-        [currentGameState.currentPlayer]: newCapturedList,
+        [currentGameState.currentPlayer === Player.SENTE ? 'sente' : 'gote']: newCapturedList,
       }
     }
 
@@ -263,7 +263,7 @@ export class GameUseCase implements IGameUseCase {
     newCapturedList.splice(pieceIndex, 1)
     const newCapturedPieces = {
       ...currentGameState.capturedPieces,
-      [currentGameState.currentPlayer]: newCapturedList,
+      [currentGameState.currentPlayer === Player.SENTE ? 'sente' : 'gote']: newCapturedList,
     }
 
     const newBoard = currentGameState.board.clone()

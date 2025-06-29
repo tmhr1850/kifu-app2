@@ -48,7 +48,9 @@
       "Bash(touch:*)",
       "Bash(true)",
       "WebFetch(domain:github.com)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm run clean:*)"
     ],
     "deny": []
   }
