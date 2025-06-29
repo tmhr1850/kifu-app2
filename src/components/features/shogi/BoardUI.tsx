@@ -16,6 +16,79 @@ interface BoardUIProps {
   pieces?: { piece: IPiece; position: UIPosition }[];
 }
 
+// 高速な位置キー生成関数（数値ベース）
+const getPositionKey = (row: number, col: number): number => row * 10 + col;
+
+// メモ化されたセル選択状態チェック（数値キー使用）
+const createCellChecker = (cells: UIPosition[]) => {
+  const cellSet = new Set(cells.map(cell => getPositionKey(cell.row, cell.column)));
+  return (row: number, col: number) => cellSet.has(getPositionKey(row, col));
+};
+
+// 盤面の行コンポーネントを分離して再レンダリングを最小化
+const BoardRow = memo<{
+  rowIndex: number;
+  size: number;
+  piecesMap: Map<number, IPiece>;
+  selectedCell: UIPosition | null;
+  highlightedChecker: (row: number, col: number) => boolean;
+  focusedCell: UIPosition;
+  cellRefs: React.MutableRefObject<Array<Array<HTMLDivElement | null>>>;
+  onCellClick?: (position: UIPosition) => void;
+  onPieceClick?: (piece: IPiece, position?: UIPosition) => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>, position: UIPosition) => void;
+  onFocus: (position: UIPosition) => void;
+}>(({ 
+  rowIndex, 
+  size,
+  piecesMap, 
+  selectedCell, 
+  highlightedChecker, 
+  focusedCell,
+  cellRefs,
+  onCellClick,
+  onPieceClick,
+  onKeyDown,
+  onFocus
+}) => {
+  return (
+    <>
+      <div className="flex items-center justify-center text-sm font-bold">
+        {KANJI_NUMBERS[rowIndex]}
+      </div>
+      
+      {Array.from({ length: size }, (_, colIndex) => {
+        const uiRow = rowIndex + 1; 
+        const uiCol = size - colIndex;
+        const piece = piecesMap.get(getPositionKey(uiRow, uiCol));
+        
+        return (
+          <BoardCell
+            key={`cell-${rowIndex}-${colIndex}`}
+            ref={(el) => {
+              if (cellRefs.current[rowIndex]) {
+                cellRefs.current[rowIndex][colIndex] = el;
+              }
+            }}
+            rowIndex={rowIndex}
+            colIndex={colIndex}
+            piece={piece || null}
+            isSelected={selectedCell?.row === uiRow && selectedCell?.column === uiCol}
+            isHighlighted={highlightedChecker(uiRow, uiCol)}
+            isFocused={focusedCell.row === uiRow && focusedCell.column === uiCol}
+            onCellClick={onCellClick || (() => {})}
+            onPieceClick={onPieceClick}
+            onKeyDown={onKeyDown}
+            onFocus={onFocus}
+            size={size}
+          />
+        );
+      })}
+    </>
+  );
+});
+
+BoardRow.displayName = 'BoardRow';
 
 export const BoardUI: React.FC<BoardUIProps> = memo(({
   size = 9,
@@ -27,8 +100,9 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
 }) => {
   // キーボードナビゲーション用のフォーカス位置（初期値は盤面の中央）
   const [focusedCell, setFocusedCell] = useState<UIPosition>({ row: Math.floor(size / 2) + 1, column: Math.floor(size / 2) + 1 });
-  const cellRefs = useRef<Array<Array<HTMLDivElement | null>>>(
-    Array(size).fill(null).map(() => Array(size).fill(null))
+  // より厳密な型定義でメモリ効率も改善
+  const cellRefs = useRef<(HTMLDivElement | null)[][]>(
+    Array.from({ length: size }, () => Array.from({ length: size }, () => null))
   );
 
   useEffect(() => {
@@ -40,31 +114,20 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
     cellRefs.current[rowIndex]?.[colIndex]?.focus();
   }, [focusedCell, size]);
 
-  // 駒の位置をマップに変換して高速検索可能にする
+  // 最適化された駒の位置マップ生成（数値キー使用）
   const piecesMap = useMemo(() => {
-    const map = new Map<string, IPiece>();
-    pieces.forEach(({ piece, position }) => {
-      // UIPositionは1-basedなので、そのままキーとして使用
-      map.set(`${position.row}-${position.column}`, piece);
-    });
+    const map = new Map<number, IPiece>();
+    for (const { piece, position } of pieces) {
+      map.set(getPositionKey(position.row, position.column), piece);
+    }
     return map;
   }, [pieces]);
-  const isCellSelected = useCallback(
-    (row: number, col: number): boolean => {
-      // row, col は 1-based
-      return selectedCell?.row === row && selectedCell?.column === col;
-    },
-    [selectedCell]
-  );
 
-  const isCellHighlighted = useCallback(
-    (row: number, col: number): boolean => {
-      // row, col は 1-based
-      return highlightedCells.some(cell => cell.row === row && cell.column === col);
-    },
+  // ハイライトチェッカーの作成（メモ化）
+  const highlightedChecker = useMemo(
+    () => createCellChecker(highlightedCells),
     [highlightedCells]
   );
-
 
   // キーボードナビゲーションのハンドラー
   const handleKeyDown = useCallback((event: React.KeyboardEvent, position: UIPosition) => {
@@ -93,7 +156,7 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
       case ' ': // Space key
         event.preventDefault();
         // フォーカス位置の駒または空のセルをクリック
-        const piece = piecesMap.get(`${position.row}-${position.column}`);
+        const piece = piecesMap.get(getPositionKey(position.row, position.column));
         if (piece) {
           onPieceClick?.(piece, position);
         } else {
@@ -104,6 +167,12 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
     setFocusedCell(newPosition);
 
   }, [piecesMap, onCellClick, onPieceClick, size]);
+
+  // 上部座標の事前生成
+  const topCoordinates = useMemo(
+    () => Array.from({ length: size }, (_, i) => size - i),
+    [size]
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
@@ -117,54 +186,29 @@ export const BoardUI: React.FC<BoardUIProps> = memo(({
           role="grid"
           aria-label="将棋盤"
         >
-          {/* 左上の空白セル */}
           <div className=""></div>
           
-          {/* 上部の座標（1-size） */}
-          {Array.from({ length: size }, (_, i) => (
+          {topCoordinates.map((num, i) => (
             <div key={`top-${i}`} className="flex items-center justify-center text-sm font-bold">
-              {size - i}
+              {num}
             </div>
           ))}
           
-          {/* 各行 */}
-          {Array.from({ length: size }, (_, rowIndex) => ( // rowIndexは 0-(size-1)
-            <React.Fragment key={`row-${rowIndex}`}>
-              {/* 左側の座標（一-九） */}
-              <div className="flex items-center justify-center text-sm font-bold">
-                {KANJI_NUMBERS[rowIndex]}
-              </div>
-              
-              {/* マス目 */}
-              {Array.from({ length: size }, (_, colIndex) => { // colIndexは 0-(size-1)
-                // UI表示用の座標(1-size)に変換
-                const uiRow = rowIndex + 1; 
-                const uiCol = size - colIndex;
-                const piece = piecesMap.get(`${uiRow}-${uiCol}`);
-                
-                return (
-                  <BoardCell
-                    key={`cell-${rowIndex}-${colIndex}`}
-                    ref={(el) => {
-                      if (cellRefs.current[rowIndex]) {
-                        cellRefs.current[rowIndex][colIndex] = el;
-                      }
-                    }}
-                    rowIndex={rowIndex}
-                    colIndex={colIndex}
-                    piece={piece || null}
-                    isSelected={isCellSelected(uiRow, uiCol)}
-                    isHighlighted={isCellHighlighted(uiRow, uiCol)}
-                    isFocused={focusedCell.row === uiRow && focusedCell.column === uiCol}
-                    onCellClick={onCellClick || (() => {})}
-                    onPieceClick={onPieceClick}
-                    onKeyDown={handleKeyDown}
-                    onFocus={setFocusedCell}
-                    size={size}
-                  />
-                );
-              })}
-            </React.Fragment>
+          {Array.from({ length: size }, (_, rowIndex) => (
+            <BoardRow
+              key={`row-${rowIndex}`}
+              rowIndex={rowIndex}
+              size={size}
+              piecesMap={piecesMap}
+              selectedCell={selectedCell || null}
+              highlightedChecker={highlightedChecker}
+              focusedCell={focusedCell}
+              cellRefs={cellRefs}
+              onCellClick={onCellClick}
+              onPieceClick={onPieceClick}
+              onKeyDown={handleKeyDown}
+              onFocus={setFocusedCell}
+            />
           ))}
         </div>
       </div>

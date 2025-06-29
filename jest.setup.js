@@ -31,6 +31,15 @@ class WorkerMock {
   terminate() {
     // Mock terminate
   }
+
+  addEventListener() {
+    // イベントリスナーのモック
+  }
+
+  removeEventListener() {
+    // イベントリスナーのモック
+  }
 }
 
+// グローバルにWorkerを定義
 global.Worker = WorkerMock;

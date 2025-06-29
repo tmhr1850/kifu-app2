@@ -201,8 +201,8 @@ export class Board implements IBoard {
   }
 
   /**
-   * 盤面状態をシリアライズする（Web Worker通信用）
-   * @returns シリアライズされた盤面データ
+   * Boardをシリアライズしてプレーンオブジェクトに変換
+   * Web Workerでの送信用
    */
   public serialize(): unknown {
     return {
@@ -221,37 +221,52 @@ export class Board implements IBoard {
   }
 
   /**
-   * シリアライズされたデータから盤面を復元する（Web Worker通信用）
-   * @param data シリアライズされた盤面データ
-   * @returns 復元されたBoardインスタンス
+   * シリアライズされたデータからBoardインスタンスを復元
+   * Web Workerでの受信用
    */
   public static deserialize(data: unknown): Board {
-    if (!data || typeof data !== 'object' || !('type' in data) || data.type !== 'Board') {
+    if (!data || typeof data !== 'object') {
       throw new Error('Invalid serialized board data');
     }
-    
-    const boardData = data as { 
-      type: string; 
-      squares: Array<Array<{
-        type: PieceType;
-        player: Player;
-        position: { row: number; column: number } | null;
-      } | null>>
+
+    const serializedData = data as { 
+      type?: string; 
+      squares?: unknown[][]; 
     };
+
+    if (serializedData.type !== 'Board' || !Array.isArray(serializedData.squares)) {
+      throw new Error('Invalid board format');
+    }
+
+    const newSquares: (IPiece | null)[][] = [];
     
-    const board = new Board();
-    
-    for (let row = 0; row < 9; row++) {
-      for (let col = 0; col < 9; col++) {
-        const pieceData = boardData.squares[row]?.[col];
-        if (pieceData) {
-          const position = new PositionClass(row, col);
-          const piece = createPiece(pieceData.type, pieceData.player, position);
-          board.setPiece(position, piece);
+    for (let row = 0; row < Board.SIZE; row++) {
+      newSquares[row] = [];
+      for (let col = 0; col < Board.SIZE; col++) {
+        const pieceData = serializedData.squares[row]?.[col];
+        
+        if (pieceData && typeof pieceData === 'object') {
+          const pd = pieceData as {
+            type: PieceType;
+            player: Player;
+            position?: { row: number; column: number } | null;
+          };
+          
+          if (pd.type && pd.player) {
+            const position = pd.position ? 
+              new PositionClass(pd.position.row, pd.position.column) : 
+              new PositionClass(row, col);
+            const piece = createPiece(pd.type, pd.player, position);
+            newSquares[row][col] = piece;
+          } else {
+            newSquares[row][col] = null;
+          }
+        } else {
+          newSquares[row][col] = null;
         }
       }
     }
-    
-    return board;
+
+    return new Board(newSquares);
   }
 } 

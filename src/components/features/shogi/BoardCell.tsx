@@ -1,7 +1,7 @@
 'use client';
 
 import { clsx } from 'clsx';
-import React, { forwardRef } from 'react';
+import React, { memo, useCallback, forwardRef } from 'react';
 
 import { PieceUI } from '@/components/ui/PieceUI';
 import { IPiece } from '@/domain/models/piece/interface';
@@ -13,8 +13,8 @@ export const KANJI_NUMBERS = [
 ];
 
 interface BoardCellProps {
-  rowIndex: number; // 0-8
-  colIndex: number; // 0-8
+  rowIndex: number;
+  colIndex: number;
   piece: IPiece | null;
   isSelected: boolean;
   isHighlighted: boolean;
@@ -25,6 +25,53 @@ interface BoardCellProps {
   onFocus: (position: UIPosition) => void;
   size: number; // 盤面のサイズ
 }
+
+// セルのスタイルをメモ化
+const getCellClassName = (isSelected: boolean, isHighlighted: boolean, isFocused: boolean) => {
+  return clsx(
+    'border border-gray-800 transition-colors duration-200',
+    'relative flex items-center justify-center',
+    'focus:outline-none focus:ring-2 focus:ring-purple-500 ring-inset',
+    {
+      'bg-blue-500': isSelected,
+      'bg-green-500': isHighlighted && !isSelected,
+      'bg-amber-50': !isSelected && !isHighlighted,
+      'ring-2 ring-purple-500 ring-inset': isFocused,
+      'animate-pulse': isFocused && !isSelected && !isHighlighted
+    }
+  );
+};
+
+// Pieceのプロパティ比較関数
+const arePiecesEqual = (prevPiece: IPiece | null, nextPiece: IPiece | null): boolean => {
+  if (prevPiece === nextPiece) return true;
+  if (!prevPiece || !nextPiece) return false;
+  return (
+    prevPiece.type === nextPiece.type &&
+    prevPiece.player === nextPiece.player &&
+    prevPiece.equals(nextPiece)
+  );
+};
+
+// メモ化の効果を高めるためのカスタム比較関数
+const areCellPropsEqual = (
+  prevProps: BoardCellProps,
+  nextProps: BoardCellProps
+): boolean => {
+  return (
+    prevProps.rowIndex === nextProps.rowIndex &&
+    prevProps.colIndex === nextProps.colIndex &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isHighlighted === nextProps.isHighlighted &&
+    prevProps.isFocused === nextProps.isFocused &&
+    prevProps.size === nextProps.size &&
+    arePiecesEqual(prevProps.piece, nextProps.piece) &&
+    prevProps.onCellClick === nextProps.onCellClick &&
+    prevProps.onPieceClick === nextProps.onPieceClick &&
+    prevProps.onKeyDown === nextProps.onKeyDown &&
+    prevProps.onFocus === nextProps.onFocus
+  );
+};
 
 const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
   rowIndex,
@@ -44,42 +91,40 @@ const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
   const uiCol = size - colIndex;
   const position = { row: uiRow, column: uiCol };
 
-  const handleCellClick = () => {
+  // コールバックをメモ化
+  const handleCellClick = useCallback(() => {
     onCellClick(position);
     onFocus(position);
-  };
+  }, [onCellClick, onFocus, position]);
 
-  const handlePieceClick = (piece: IPiece) => {
+  const handlePieceClick = useCallback((piece: IPiece) => {
     onPieceClick?.(piece, position);
     onFocus(position);
-  };
+  }, [onPieceClick, onFocus, position]);
   
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     onKeyDown(event, position);
-  };
+  }, [onKeyDown, position]);
+
+  // 駒の説明テキストを事前計算
+  const pieceDescription = piece 
+    ? ` - ${piece.player === 'SENTE' ? '先手' : '後手'}の${piece.type}`
+    : ' - 空のマス';
+
+  const cellLabel = `${KANJI_NUMBERS[rowIndex]}${size - colIndex}${pieceDescription}`;
+  const className = getCellClassName(isSelected, isHighlighted, isFocused);
 
   return (
     <div
       ref={ref}
       tabIndex={isFocused ? 0 : -1}
       data-testid={`cell-${rowIndex}-${colIndex}`}
-      className={clsx(
-        'border border-gray-800 transition-colors duration-200',
-        'relative flex items-center justify-center',
-        'focus:outline-none focus:ring-2 focus:ring-purple-500 ring-inset', // isFocusedのスタイルをTailwindのfocus擬似クラスに統一
-        {
-          'bg-blue-500': isSelected,
-          'bg-green-500': isHighlighted && !isSelected,
-          'bg-amber-50': !isSelected && !isHighlighted,
-          'ring-2 ring-purple-500 ring-inset': isFocused,
-          'animate-pulse': isFocused && !isSelected && !isHighlighted
-        }
-      )}
+      className={className}
       role="gridcell"
-      aria-label={`${KANJI_NUMBERS[rowIndex]}${size - colIndex}${piece ? ` - ${piece.player === 'SENTE' ? '先手' : '後手'}の${piece.type}` : ' - 空のマス'}`}
+      aria-label={cellLabel}
       onKeyDown={handleKeyDown}
-      onClick={piece ? undefined : handleCellClick} // 駒がある場合はセルクリックを無効化
-      onFocus={() => onFocus(position)} // セルがフォーカスされたときに親コンポーネントに通知
+      onClick={piece ? undefined : handleCellClick}
+      onFocus={() => onFocus(position)}
     >
       {piece ? (
         <PieceUI
@@ -99,4 +144,4 @@ const BoardCellComponent = forwardRef<HTMLDivElement, BoardCellProps>(({
 });
 
 BoardCellComponent.displayName = 'BoardCell';
-export const BoardCell = React.memo(BoardCellComponent);
+export const BoardCell = memo(BoardCellComponent, areCellPropsEqual);

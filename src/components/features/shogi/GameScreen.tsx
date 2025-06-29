@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useReducer } from 'react';
 
 import { CapturedPiecesUI } from '@/components/ui/CapturedPiecesUI';
 import { CapturedPiece } from '@/components/ui/types';
+import { UI_CONFIG } from '@/config/gameConfig';
 import { IPiece } from '@/domain/models/piece/interface';
-import { Player, PieceType } from '@/domain/models/piece/types';
+import { Player, PieceType, Move } from '@/domain/models/piece/types';
+import { useAIWorker } from '@/hooks/useAIWorker';
 import { useGameManager } from '@/hooks/useGameManager';
 import { UIPosition } from '@/types/common';
 
@@ -13,230 +15,330 @@ import { BoardUI } from './BoardUI';
 import { PromotionDialog } from './PromotionDialog';
 import { ResignConfirmDialog } from './ResignConfirmDialog';
 
-interface PendingMove {
-  from: UIPosition;
-  to: UIPosition;
+// State分割のための型定義
+interface GameScreenState {
+  selectedCell: UIPosition | null;
+  selectedCapturedPiece: PieceType | null;
+  highlightedCells: UIPosition[];
+  pendingMove: { from: UIPosition; to: UIPosition } | null;
+  showResignDialog: boolean;
+  errorMessage: string | null;
+  errorTimeoutId: NodeJS.Timeout | null;
 }
 
-export const GameScreen: React.FC = React.memo(function GameScreen() {
+type GameScreenAction =
+  | { type: 'SELECT_CELL'; cell: UIPosition | null }
+  | { type: 'SELECT_CAPTURED_PIECE'; piece: PieceType | null }
+  | { type: 'SET_HIGHLIGHTED_CELLS'; cells: UIPosition[] }
+  | { type: 'SET_PENDING_MOVE'; move: { from: UIPosition; to: UIPosition } | null }
+  | { type: 'SHOW_RESIGN_DIALOG'; show: boolean }
+  | { type: 'SET_ERROR'; message: string | null; timeoutId?: NodeJS.Timeout | null }
+  | { type: 'CLEAR_ERROR' };
+
+// State管理のReducer
+function gameScreenReducer(state: GameScreenState, action: GameScreenAction): GameScreenState {
+  switch (action.type) {
+    case 'SELECT_CELL':
+      return { ...state, selectedCell: action.cell };
+    case 'SELECT_CAPTURED_PIECE':
+      return { ...state, selectedCapturedPiece: action.piece };
+    case 'SET_HIGHLIGHTED_CELLS':
+      return { ...state, highlightedCells: action.cells };
+    case 'SET_PENDING_MOVE':
+      return { ...state, pendingMove: action.move };
+    case 'SHOW_RESIGN_DIALOG':
+      return { ...state, showResignDialog: action.show };
+    case 'SET_ERROR':
+      // 既存のタイマーをクリア
+      if (state.errorTimeoutId) {
+        clearTimeout(state.errorTimeoutId);
+      }
+      return { 
+        ...state, 
+        errorMessage: action.message,
+        errorTimeoutId: action.timeoutId || null
+      };
+    case 'CLEAR_ERROR':
+      if (state.errorTimeoutId) {
+        clearTimeout(state.errorTimeoutId);
+      }
+      return { ...state, errorMessage: null, errorTimeoutId: null };
+    default:
+      return state;
+  }
+}
+
+// 持ち駒の集計を行うユーティリティ関数
+const aggregateCapturedPieces = (pieces: IPiece[]): CapturedPiece[] => {
+  const pieceCount = new Map<PieceType, number>();
+  for (const piece of pieces) {
+    pieceCount.set(piece.type, (pieceCount.get(piece.type) || 0) + 1);
+  }
+  return Array.from(pieceCount.entries()).map(([type, count]) => ({ type, count }));
+};
+
+export const GameScreen: React.FC = () => {
+  // メモリリーク対策されたGameManagerを使用
   const { getGameManager } = useGameManager();
   const gameManager = getGameManager();
-  const [managerState, setManagerState] = useState(() => gameManager.getState());
+  const [managerState, setManagerState] = useState(gameManager.getState());
+  const gameState = managerState.gameState;
 
-  useEffect(() => {
-    const unsubscribe = gameManager.subscribe(setManagerState);
-    return () => unsubscribe();
-  }, [gameManager]);
+  // UI状態をReducerで管理
+  const [uiState, dispatch] = useReducer(gameScreenReducer, {
+    selectedCell: null,
+    selectedCapturedPiece: null,
+    highlightedCells: [],
+    pendingMove: null,
+    showResignDialog: false,
+    errorMessage: null,
+    errorTimeoutId: null
+  });
 
-  const gameState = managerState?.gameState;
-  const [selectedCell, setSelectedCell] = useState<UIPosition | null>(null);
-  const [selectedCapturedPiece, setSelectedCapturedPiece] = useState<PieceType | null>(null);
-  const [highlightedCells, setHighlightedCells] = useState<UIPosition[]>([]);
-  
-  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
-  const [showResignDialog, setShowResignDialog] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // エラー表示関数（設定ファイルから時間取得）
+  const showError = useCallback((message: string) => {
+    let displayTime = UI_CONFIG.DEFAULT_ERROR_DISPLAY_TIME;
+    
+    if (message.includes('チェックメイト') || 
+        message.includes('投了') ||
+        message.includes('ステイルメイト')) {
+      displayTime = UI_CONFIG.CRITICAL_ERROR_DISPLAY_TIME;
+    } else if (message.includes('チェック')) {
+      displayTime = UI_CONFIG.WARNING_DISPLAY_TIME;
+    } else if (message.includes('移動できません') || 
+               message.includes('その手は指せません')) {
+      displayTime = UI_CONFIG.QUICK_ERROR_DISPLAY_TIME;
+    }
+    
+    const timeoutId = setTimeout(() => {
+      dispatch({ type: 'CLEAR_ERROR' });
+    }, displayTime);
+    
+    dispatch({ type: 'SET_ERROR', message, timeoutId });
+  }, []);
 
-  // 初期化時に保存されたゲームを読み込む
-  useEffect(() => {
-    const loadSavedGame = async () => {
-      const savedState = await gameManager.loadGame();
-      if (savedState) {
-        setManagerState(savedState);
+  // AIの手を処理
+  const handleAIMove = useCallback(async (move: Move) => {
+    if (!move) {
+      showError('AIが手を見つけられませんでした');
+      return;
+    }
+
+    try {
+      let result;
+      if ('from' in move && move.from && move.to) {
+        // PieceMove (駒移動)
+        const fromUI: UIPosition = { 
+          row: move.from.row + 1, 
+          column: move.from.column + 1 
+        };
+        const toUI: UIPosition = { 
+          row: move.to.row + 1, 
+          column: move.to.column + 1 
+        };
+        result = await gameManager.movePiece(fromUI, toUI, move.isPromotion);
+      } else if ('drop' in move && move.drop && move.to) {
+        // DropMove (駒打ち)
+        const toUI: UIPosition = { 
+          row: move.to.row + 1, 
+          column: move.to.column + 1 
+        };
+        result = await gameManager.dropPiece(move.drop, toUI);
       } else {
-        // 保存されたゲームがない場合は新規ゲームを開始
-        const newState = await gameManager.startNewGame();
-        setManagerState(newState);
+        showError('無効な手です');
+        return;
+      }
+      setManagerState(result);
+    } catch (error) {
+      if (error instanceof Error) {
+        showError(error.message);
+      }
+    }
+  }, [gameManager, showError]);
+
+  // AI Web Workerフック
+  const { calculateMove: calculateAIMove, isCalculating } = useAIWorker({
+    onMoveCalculated: handleAIMove,
+    onError: (error) => showError(typeof error === 'string' ? error : (error as Error).message)
+  });
+
+  // 初期化とゲーム読み込み
+  useEffect(() => {
+    let isCancelled = false;
+    
+    const loadSavedGame = async () => {
+      try {
+        const savedState = await gameManager.loadGame();
+        if (isCancelled) return;
+        
+        if (savedState) {
+          setManagerState(savedState);
+        } else {
+          const newState = await gameManager.startNewGame();
+          if (!isCancelled) {
+            setManagerState(newState);
+          }
+        }
+      } catch (error) {
+        // GameManagerがdisposeされている場合はエラーを無視
+        if (!isCancelled && error instanceof Error && !error.message.includes('disposed')) {
+          console.error('Failed to load saved game:', error);
+        }
       }
     };
+    
     loadSavedGame();
+    
+    return () => {
+      isCancelled = true;
+    };
   }, [gameManager]);
 
-  // エラーメッセージの表示時間をエラーの種類によって調整
+  // AIのターンを処理（Web Worker使用）
   useEffect(() => {
-    if (errorMessage) {
-      // エラーの種類によって表示時間を決定
-      let displayTime = 3000; // デフォルト3秒
-      
-      // 重要なエラーは長く表示
-      if (errorMessage.includes('チェックメイト') || 
-          errorMessage.includes('投了') ||
-          errorMessage.includes('ステイルメイト')) {
-        displayTime = 10000; // 10秒
-      } else if (errorMessage.includes('チェック')) {
-        displayTime = 5000; // 5秒
-      }
-      // 軽微なエラー（移動できない等）は短く
-      else if (errorMessage.includes('移動できません') || 
-               errorMessage.includes('その手は指せません')) {
-        displayTime = 2000; // 2秒
-      }
-      
+    if (!gameState || gameState.status !== 'playing' || isCalculating) {
+      return;
+    }
+
+    if (gameState.currentPlayer === managerState.aiColor && !managerState.isAIThinking) {
       const timer = setTimeout(() => {
-        setErrorMessage(null);
-      }, displayTime);
+        const board = gameState.board;
+        calculateAIMove(board, managerState.aiColor, gameState.capturedPieces);
+      }, UI_CONFIG.AI_MOVE_DELAY);
+
       return () => clearTimeout(timer);
     }
-  }, [errorMessage]);
+  }, [gameState, managerState.aiColor, managerState.isAIThinking, calculateAIMove, isCalculating]);
 
-  // GameManagerのエラーを監視
+  // エラー監視
   useEffect(() => {
-    if (managerState?.error) {
-      setErrorMessage(managerState.error.message);
+    if (managerState.error) {
+      showError(managerState.error.message);
     }
-  }, [managerState?.error]);
+  }, [managerState.error, showError]);
 
-  // AIが思考を開始したら選択状態をクリア
+  // コンポーネントアンマウント時のクリーンアップ（メモリリーク対策）
   useEffect(() => {
-    if (managerState?.isAIThinking) {
-      setSelectedCell(null);
-      setHighlightedCells([]);
-      setSelectedCapturedPiece(null);
-    }
-  }, [managerState?.isAIThinking]);
+    return () => {
+      // エラータイマーをクリア
+      dispatch({ type: 'CLEAR_ERROR' });
+    };
+  }, []);
 
-  const capturedSente = useMemo((): CapturedPiece[] => {
-    if (!gameState) return [];
-    const pieceCount = new Map<PieceType, number>();
-    for (const piece of gameState.capturedPieces.sente) {
-      pieceCount.set(piece.type, (pieceCount.get(piece.type) || 0) + 1);
-    }
-    return Array.from(pieceCount.entries()).map(([type, count]) => ({ type, count }));
-  }, [gameState]);
+  // 持ち駒の集計（最適化版）
+  const capturedSente: CapturedPiece[] = useMemo(
+    () => gameState ? aggregateCapturedPieces(gameState.capturedPieces.sente) : [],
+    [gameState]
+  );
 
-  const capturedGote = useMemo((): CapturedPiece[] => {
-    if (!gameState) return [];
-    const pieceCount = new Map<PieceType, number>();
-    for (const piece of gameState.capturedPieces.gote) {
-      pieceCount.set(piece.type, (pieceCount.get(piece.type) || 0) + 1);
-    }
-    return Array.from(pieceCount.entries()).map(([type, count]) => ({ type, count }));
-  }, [gameState]);
+  const capturedGote: CapturedPiece[] = useMemo(
+    () => gameState ? aggregateCapturedPieces(gameState.capturedPieces.gote) : [],
+    [gameState]
+  );
 
-  // 盤面の駒を配列に変換（GameUseCaseと同じ座標変換を使用）
+  // 盤面の駒配列（最適化版）
   const boardPieces = useMemo(() => {
     if (!gameState) return [];
+    
+    // GameManagerのgetBoardPieces()を使用して統一性を保つ
     return gameManager.getBoardPieces();
   }, [gameState, gameManager]);
 
-  // セルがクリックされた時の処理
+  // ハンドラー関数（メモ化）
   const handleCellClick = useCallback(async (position: UIPosition) => {
-    // AIが思考中の場合は操作を受け付けない
-    if (managerState?.isAIThinking) {
-      return;
-    }
+    if (!gameState || gameState.status !== 'playing' || managerState.isAIThinking) return;
 
+    const board = gameState.board;
+    const clickedPiece = board.getPiece({ row: position.row - 1, column: position.column - 1 });
 
-    // 持ち駒が選択されている場合
-    if (selectedCapturedPiece) {
-      const newState = await gameManager.dropPiece(selectedCapturedPiece, position);
-      setManagerState(newState);
-      if (!newState.error) {
-        setSelectedCapturedPiece(null);
-        setHighlightedCells([]);
-        setErrorMessage(null); // 成功時はエラーメッセージをクリア
+    if (uiState.selectedCell) {
+      if (uiState.selectedCell.row === position.row && uiState.selectedCell.column === position.column) {
+        dispatch({ type: 'SELECT_CELL', cell: null });
+        dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: [] });
+        return;
       }
-      return;
-    }
 
-    // 駒が選択されている場合、移動処理
-    if (selectedCell) {
-      const from = selectedCell;
-      const to = position;
-      
-      // 成りが可能かチェック
-      if (gameManager.canPromote(from, to)) {
-        setPendingMove({ from, to });
-      } else {
-        // 通常の移動
-        const newState = await gameManager.movePiece(from, to);
-        setManagerState(newState);
-        if (!newState.error) {
-          setErrorMessage(null); // 成功時はエラーメッセージをクリア
+      // 成り判定
+      if (gameManager.canPromote(uiState.selectedCell, position)) {
+        dispatch({ type: 'SET_PENDING_MOVE', move: { from: uiState.selectedCell, to: position } });
+        return;
+      }
+
+      try {
+        const result = await gameManager.movePiece(uiState.selectedCell, position);
+        setManagerState(result);
+        dispatch({ type: 'SELECT_CELL', cell: null });
+        dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: [] });
+      } catch (error) {
+        if (error instanceof Error) {
+          showError(error.message);
         }
       }
+    } else if (clickedPiece && clickedPiece.player === gameState.currentPlayer) {
+      dispatch({ type: 'SELECT_CELL', cell: position });
+      const validMoves = gameManager.getLegalMoves(position);
+      dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: validMoves });
+    }
+  }, [gameState, gameManager, managerState.isAIThinking, uiState.selectedCell, showError]);
 
-      setSelectedCell(null);
-      setHighlightedCells([]);
-    }
-  }, [selectedCell, selectedCapturedPiece, gameManager, managerState?.isAIThinking]);
+  const handlePieceClick = useCallback((piece: IPiece) => {
+    if (!piece.position) return;
+    const position = { row: piece.position.row + 1, column: piece.position.column + 1 };
+    handleCellClick(position);
+  }, [handleCellClick]);
 
-  // 駒がクリックされた時の処理
-  const handlePieceClick = useCallback((piece: IPiece, position?: UIPosition) => {
-    if (!gameState || managerState?.isAIThinking) return;
-    
-    // プレイヤーの駒のみ選択可能
-    if (piece.player !== managerState?.playerColor) {
-      return;
-    }
-    // 現在の手番でない場合は選択不可
-    if (gameState.currentPlayer !== managerState?.playerColor) {
-      return;
-    }
-
-    // 位置情報が渡されていれば直接使用、なければ駒から検索
-    let uiPos: UIPosition | undefined = position;
-    if (!uiPos) {
-      const clickedPiece = boardPieces.find(p => p.piece === piece);
-      uiPos = clickedPiece?.position;
-    }
-    
-    if (uiPos) {
-      setSelectedCell(uiPos);
-      setSelectedCapturedPiece(null);
-      const validMoves = gameManager.getLegalMoves(uiPos);
-      setHighlightedCells(validMoves);
-    }
-  }, [gameManager, gameState, boardPieces, managerState?.playerColor, managerState?.isAIThinking]);
-
-  // 持ち駒がクリックされた時の処理
   const handleCapturedPieceClick = useCallback((pieceType: PieceType) => {
-    if (!gameState || managerState?.isAIThinking) return;
-    // 現在の手番でない場合は選択不可
-    if (gameState.currentPlayer !== managerState?.playerColor) {
+    if (!gameState || gameState.status !== 'playing' || managerState.isAIThinking) return;
+
+    if (uiState.selectedCapturedPiece === pieceType) {
+      dispatch({ type: 'SELECT_CAPTURED_PIECE', piece: null });
+      dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: [] });
       return;
     }
-    
-    setSelectedCapturedPiece(pieceType);
-    setSelectedCell(null);
 
+    dispatch({ type: 'SELECT_CAPTURED_PIECE', piece: pieceType });
     const validDropPositions = gameManager.getLegalDropPositions(pieceType);
-    setHighlightedCells(validDropPositions);
-  }, [gameManager, gameState, managerState?.playerColor, managerState?.isAIThinking]);
+    dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: validDropPositions });
+  }, [gameState, gameManager, managerState.isAIThinking, uiState.selectedCapturedPiece]);
 
-  // 成り選択の処理
-  const handlePromotionChoice = useCallback(async (promote: boolean) => {
-    if (pendingMove) {
-      const newState = await gameManager.movePiece(pendingMove.from, pendingMove.to, promote);
-      setManagerState(newState);
-      if (!newState.error) {
-        setErrorMessage(null); // 成功時はエラーメッセージをクリア
-      }
-      setPendingMove(null);
-    }
-  }, [pendingMove, gameManager]);
-
-  // 新規対局
   const handleNewGame = useCallback(async () => {
-    // 保存されたゲームをクリア
     gameManager.clearSavedGame();
-    
     const newState = await gameManager.startNewGame();
     setManagerState(newState);
-    setSelectedCell(null);
-    setSelectedCapturedPiece(null);
-    setHighlightedCells([]);
-    setErrorMessage(null);
+    dispatch({ type: 'SELECT_CELL', cell: null });
+    dispatch({ type: 'SELECT_CAPTURED_PIECE', piece: null });
+    dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: [] });
+    dispatch({ type: 'CLEAR_ERROR' });
   }, [gameManager]);
 
-  // 投了
   const handleResign = useCallback(async () => {
     if (gameState) {
-      const newState = await gameManager.resign(managerState?.playerColor);
+      const newState = await gameManager.resign(managerState.playerColor);
       setManagerState(newState);
-      setShowResignDialog(false);
+      dispatch({ type: 'SHOW_RESIGN_DIALOG', show: false });
     }
-  }, [gameManager, gameState, managerState?.playerColor]);
+  }, [gameManager, gameState, managerState.playerColor]);
+
+  const handlePromotionDecision = useCallback(async (promote: boolean) => {
+    if (!uiState.pendingMove) return;
+
+    try {
+      const result = await gameManager.movePiece(
+        uiState.pendingMove.from,
+        uiState.pendingMove.to,
+        promote
+      );
+      setManagerState(result);
+    } catch (error) {
+      if (error instanceof Error) {
+        showError(error.message);
+      }
+    } finally {
+      dispatch({ type: 'SET_PENDING_MOVE', move: null });
+      dispatch({ type: 'SELECT_CELL', cell: null });
+      dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: [] });
+    }
+  }, [gameManager, uiState.pendingMove, showError]);
 
   if (!gameState) {
     return <div>Loading...</div>;
@@ -258,7 +360,7 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
             <h1 className="text-3xl font-bold mb-2">将棋ゲーム</h1>
             <div className="flex justify-center items-center gap-4">
               <span className="text-xl font-semibold">{currentPlayerText}</span>
-              {managerState?.isAIThinking && (
+              {(managerState.isAIThinking || isCalculating) && (
                 <span className="text-blue-600 font-semibold">AIが考え中...</span>
               )}
               {gameState.isCheck && gameState.status === 'playing' && (
@@ -281,10 +383,10 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
               <CapturedPiecesUI
                 capturedPieces={capturedGote}
                 player={Player.GOTE}
-                isMyTurn={managerState?.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE && !managerState?.isAIThinking}
+                isMyTurn={managerState.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE && !managerState.isAIThinking}
                 onPieceClick={handleCapturedPieceClick}
                 selectedPiece={
-                  managerState?.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE ? selectedCapturedPiece : null
+                  managerState.playerColor === Player.GOTE && gameState.currentPlayer === Player.GOTE ? uiState.selectedCapturedPiece : null
                 }
               />
             </div>
@@ -295,11 +397,11 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
                 pieces={boardPieces}
                 onCellClick={handleCellClick}
                 onPieceClick={handlePieceClick}
-                highlightedCells={highlightedCells}
-                selectedCell={selectedCell}
+                highlightedCells={uiState.highlightedCells}
+                selectedCell={uiState.selectedCell}
               />
               {/* AI思考中のオーバーレイ */}
-              {managerState?.isAIThinking && (
+              {(managerState.isAIThinking || isCalculating) && (
                 <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center rounded-lg">
                   <div className="bg-white px-4 py-2 rounded-lg shadow-lg">
                     <span className="text-lg font-semibold text-blue-600">AIが考え中...</span>
@@ -314,10 +416,10 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
               <CapturedPiecesUI
                 capturedPieces={capturedSente}
                 player={Player.SENTE}
-                isMyTurn={managerState?.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE && !managerState?.isAIThinking}
+                isMyTurn={managerState.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE && !managerState.isAIThinking}
                 onPieceClick={handleCapturedPieceClick}
                 selectedPiece={
-                  managerState?.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE ? selectedCapturedPiece : null
+                  managerState.playerColor === Player.SENTE && gameState.currentPlayer === Player.SENTE ? uiState.selectedCapturedPiece : null
                 }
               />
             </div>
@@ -327,62 +429,48 @@ export const GameScreen: React.FC = React.memo(function GameScreen() {
           <div className="mt-6 flex justify-center gap-4">
             <button
               onClick={handleNewGame}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={managerState?.isAIThinking}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
               新規対局
             </button>
-            <button
-              onClick={() => setShowResignDialog(true)}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={gameState.status === 'checkmate' || gameState.status === 'resigned' || managerState?.isAIThinking}
-            >
-              投了
-            </button>
+            {gameState.status === 'playing' && (
+              <button
+                onClick={() => dispatch({ type: 'SHOW_RESIGN_DIALOG', show: true })}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+              >
+                投了
+              </button>
+            )}
           </div>
         </div>
+
+        {/* エラーメッセージ */}
+        {uiState.errorMessage && (
+          <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
+            {uiState.errorMessage}
+          </div>
+        )}
       </div>
 
-      {/* 成り選択ダイアログ */}
-      {pendingMove && (
+      {/* 成り確認ダイアログ */}
+      {uiState.pendingMove && (
         <PromotionDialog
-          onChoice={handlePromotionChoice}
-          onCancel={() => setPendingMove(null)}
+          onChoice={handlePromotionDecision}
+          onCancel={() => {
+            dispatch({ type: 'SET_PENDING_MOVE', move: null });
+            dispatch({ type: 'SELECT_CELL', cell: null });
+            dispatch({ type: 'SET_HIGHLIGHTED_CELLS', cells: [] });
+          }}
         />
       )}
 
       {/* 投了確認ダイアログ */}
-      {showResignDialog && (
+      {uiState.showResignDialog && (
         <ResignConfirmDialog
           onConfirm={handleResign}
-          onCancel={() => setShowResignDialog(false)}
+          onCancel={() => dispatch({ type: 'SHOW_RESIGN_DIALOG', show: false })}
         />
-      )}
-
-      {/* エラーメッセージ */}
-      {errorMessage && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg max-w-md">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                <span className="text-sm font-medium">{errorMessage}</span>
-              </div>
-              <button
-                onClick={() => setErrorMessage(null)}
-                className="ml-2 text-red-500 hover:text-red-700 focus:outline-none"
-                aria-label="エラーメッセージを閉じる"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
-});
+};
