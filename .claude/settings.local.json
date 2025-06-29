@@ -46,7 +46,8 @@
       "Bash(open http://localhost:3001)",
       "Bash(touch:*)",
       "Bash(true)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(npm run typecheck:*)"
     ],
     "deny": []
   }
