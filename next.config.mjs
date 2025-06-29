@@ -6,6 +6,9 @@ const nextConfig = {
   experimental: {
     // CSS最適化は一旦無効化（安定性重視）
     // optimizeCss: true,
+    
+    // FOUC防止のためのCSS最適化
+    cssChunking: 'strict',
   },
   
   // キャッシュ最適化

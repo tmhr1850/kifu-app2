@@ -353,7 +353,45 @@ export const GameScreen: React.FC = () => {
   }, [gameManager, uiState.pendingMove, showError]);
 
   if (!gameState) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100 p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            {/* ローディング時のスケルトンUI */}
+            <div className="mb-6 text-center">
+              <div className="h-8 bg-gray-200 rounded mb-2 loading-placeholder"></div>
+              <div className="h-6 bg-gray-200 rounded w-1/2 mx-auto loading-placeholder"></div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-6">
+              {/* 左側スケルトン */}
+              <div className="order-2 lg:order-1">
+                <div className="h-6 bg-gray-200 rounded mb-2 loading-placeholder"></div>
+                <div className="h-20 bg-gray-200 rounded loading-placeholder"></div>
+              </div>
+              
+              {/* 中央将棋盤スケルトン */}
+              <div className="order-1 lg:order-2">
+                <div className="aspect-square bg-amber-100 rounded-lg shadow-lg p-4">
+                  <div className="w-full h-full bg-gray-200 rounded loading-placeholder"></div>
+                </div>
+              </div>
+              
+              {/* 右側スケルトン */}
+              <div className="order-3">
+                <div className="h-6 bg-gray-200 rounded mb-2 loading-placeholder"></div>
+                <div className="h-20 bg-gray-200 rounded loading-placeholder"></div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-center gap-4">
+              <div className="h-10 w-24 bg-gray-200 rounded loading-placeholder"></div>
+              <div className="h-10 w-24 bg-gray-200 rounded loading-placeholder"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const currentPlayerText = gameState.currentPlayer === Player.SENTE ? '先手番' : '後手番';
